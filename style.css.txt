@@ -1,0 +1,77 @@
+/* คอนฟิกพื้นฐานเพิ่มเติมสำหรับตารางมือถือ */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ปรับลักษณะของปุ่ม Pills */
+.pill-active {
+    background-color: #10b981;
+    color: #ffffff;
+    border-color: #10b981;
+}
+.pill-inactive {
+    background-color: #ffffff;
+    color: #475569;
+    border-color: #e2e8f0;
+}
+.pill-inactive:hover {
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+/* 🖨️ รูปแบบคำสั่งประหยัดหมึกและกระดาษสำหรับเวลาสั่งพิมพ์รายงาน */
+@media print {
+    /* ซ่อนโครงสร้างที่ไม่จำเป็นทั้งหมด */
+    aside, button, input, select, #type-pills, .no-print, .swal2-container {
+        display: none !important;
+    }
+
+    /* รีเซ็ตหน้าต่างเนื้อหาหลักให้กว้างเต็มขอบ */
+    body, main {
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+
+    .content-section {
+        display: block !important;
+    }
+    
+    .hidden-print {
+        display: none !important;
+    }
+
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    /* จัดแต่งตารางสำหรับพิมพ์ในกระดาษรายงานโดยเฉพาะ */
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 11px !important; /* ย่อขนาดตัวอักษรเพื่อประหยัดพื้นที่แนวตั้ง */
+        color: #000000 !important;
+    }
+
+    th, td {
+        border: 1px solid #94a3b8 !important; /* ทำเส้นตารางให้ชัดแต่บาง */
+        padding: 4px 6px !important; /* บีบช่องว่างเพื่อให้แถวชิดกัน */
+        word-wrap: break-word !important;
+    }
+
+    tr {
+        page-break-inside: avoid !important; /* ป้องกันแถวขาดครึ่งแบ่งหน้ากระดาษ */
+    }
+
+    /* บังคับระบบพิมพ์สีพื้นหลังเตือนภัย (เช่น สีแดง ส้ม เหลือง ในเครื่องปริ้นท์) */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
