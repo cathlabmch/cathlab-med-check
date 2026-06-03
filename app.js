@@ -16,11 +16,18 @@ let APP_STATE = {
 // เริ่มต้นระบบเมื่อโหลดหน้าเสร็จสิ้น
 document.addEventListener("DOMContentLoaded", () => {
     // การทำงานปุ่ม Login และสิทธิ์ Enter
-    document.getElementById("input-empid").addEventListener("keypress", (e) => {
-        if (e.key === 'Enter') handleLogin();
-    });
-    document.getElementById("btn-login").addEventListener("click", handleLogin);
-    document.getElementById("btn-logout").addEventListener("click", handleLogout);
+    const inputEmp = document.getElementById("input-empid");
+    if (inputEmp) {
+        inputEmp.addEventListener("keypress", (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    }
+    
+    const btnLogin = document.getElementById("btn-login");
+    if (btnLogin) btnLogin.addEventListener("click", handleLogin);
+    
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout) btnLogout.addEventListener("click", handleLogout);
 });
 
 // ฟังก์ชันเปิดแจ้งเตือนโหลดข้อมูลแบบมินิมอลสวยงาม
@@ -34,16 +41,23 @@ function showLoading(msg = "กำลังบันทึกข้อมูล.
 
 // 1. ตรวจสอบสิทธิ์เข้าใช้งาน
 async function handleLogin() {
-    const empId = document.getElementById("input-empid").value.trim();
+    const inputEmp = document.getElementById("input-empid");
+    if (!inputEmp) return;
+    
+    const empId = inputEmp.value.trim();
     if(!empId) return Swal.fire("กรุณาระบุข้อมูล", "โปรดระบุรหัสพนักงานก่อนดำเนินการต่อ", "warning");
 
     showLoading("กำลังตรวจสอบรหัสผู้ใช้งาน...");
 
     try {
+        // ใช้เทคนิคส่งเป็น text/plain เพื่อหลีกเลี่ยงปัญหาการบล็อกสิทธิ์ CORS ล้มเหลวจากบางเบราว์เซอร์
         const res = await fetch(API_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "login", empId: empId })
         });
+        
+        if (!res.ok) throw new Error("Network response was not ok");
         const result = await res.json();
 
         if(result.success) {
@@ -54,7 +68,8 @@ async function handleLogin() {
             document.getElementById("txt-login-time").innerText = "ล็อกอินเมื่อ: " + new Date().toLocaleTimeString('th-TH');
             
             if(result.role === "Admin") {
-                document.getElementById("menu-admin").classList.remove("hidden");
+                const menuAdmin = document.getElementById("menu-admin");
+                if (menuAdmin) menuAdmin.classList.remove("hidden");
             }
             
             document.getElementById("login-screen").classList.add("hidden");
@@ -64,10 +79,16 @@ async function handleLogin() {
             navigate('dashboard');
             Swal.close();
         } else {
-            Swal.fire("ไม่พบผู้ใช้งาน", result.message, "error");
+            // โชว์ข้อความแจ้งเตือนความผิดพลาดแบบละเอียดที่ส่งมาจากหลังบ้าน
+            Swal.fire({
+                title: "ไม่พบผู้ใช้งาน",
+                html: result.message ? result.message.replace(/\n/g, "<br>") : "รหัสพนักงานไม่ถูกต้อง",
+                icon: "error"
+            });
         }
     } catch (err) {
-        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดในการรับส่งข้อมูลกับเซิร์ฟเวอร์", "error");
+        console.error("Login Error:", err);
+        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดในการรับส่งข้อมูลกับเซิร์ฟเวอร์ หรือสิทธิ์เว็บแอปไม่ถูกต้อง", "error");
     }
 }
 
@@ -76,12 +97,13 @@ async function reloadDataFromServer() {
     try {
         const res = await fetch(API_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "fetchAllData" })
         });
         const result = await res.json();
         if(result.success) {
-            APP_STATE.master = result.master;
-            APP_STATE.lots = result.lots;
+            APP_STATE.master = result.master || [];
+            APP_STATE.lots = result.lots || [];
             renderDashboard();
             renderInspectList();
         }
@@ -98,9 +120,11 @@ function navigate(menu) {
         i.classList.add("text-slate-600", "hover:bg-slate-50");
     });
 
-    document.getElementById(`section-${menu}`).classList.remove("hidden");
+    const targetSection = document.getElementById(`section-${menu}`);
+    if (targetSection) targetSection.classList.remove("hidden");
+    
     const event = window.event;
-    if(event) {
+    if(event && event.currentTarget) {
         event.currentTarget.classList.remove("text-slate-600", "hover:bg-slate-50");
         event.currentTarget.classList.add("bg-emerald-600", "text-white");
     }
@@ -113,18 +137,25 @@ function navigate(menu) {
 // 4. หน้าจอ DASHBOARD (คำนวณวันอายุ 9 เดือน + แบ่งกลุ่มแถบสี)
 function renderDashboard() {
     const tbody = document.getElementById("table-dashboard-body");
+    if (!tbody) return;
     tbody.innerHTML = "";
+    
     const today = new Date();
     const limitDate = new Date();
-    limitDate.setMonth(today.getMonth() + 9); // กรองล่วงหน้า 9 เดือน
+    limitDate.setMonth(today.getMonth() + 9); 
 
     let filtered = [];
 
     APP_STATE.lots.forEach(lot => {
+        if (!lot.expDate) return;
         const exp = new Date(lot.expDate);
         if(exp >= today && exp <= limitDate) {
-            const masterItem = APP_STATE.master.find(m => m.barcodeId.toString() === lot.barcodeId.toString());
-            filtered.push({ ...lot, drugName: masterItem ? masterItem.drugName : "ไม่ระบุชื่อยา", unit: masterItem ? masterItem.unit : "-" });
+            const masterItem = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
+            filtered.push({ 
+                ...lot, 
+                drugName: masterItem ? masterItem.drugName : "ไม่ระบุชื่อยา", 
+                unit: masterItem ? masterItem.unit : "-" 
+            });
         }
     });
 
@@ -136,19 +167,19 @@ function renderDashboard() {
         const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
         
         let colorClass = "";
-        if (diffMonths <= 3) colorClass = "bg-rose-50 border-l-4 border-rose-500 text-rose-900 font-medium"; // แดง (0-3 ด.)
-        else if (diffMonths <= 6) colorClass = "bg-amber-50 border-l-4 border-amber-500 text-amber-950"; // ส้ม (3-6 ด.)
-        else colorClass = "bg-yellow-50 border-l-4 border-yellow-500 text-slate-800"; // เหลือง (6-9 ด.)
+        if (diffMonths <= 3) colorClass = "bg-rose-50 border-l-4 border-rose-500 text-rose-900 font-medium"; 
+        else if (diffMonths <= 6) colorClass = "bg-amber-50 border-l-4 border-amber-500 text-amber-950"; 
+        else colorClass = "bg-yellow-50 border-l-4 border-yellow-500 text-slate-800"; 
 
         const tr = document.createElement("tr");
         tr.className = colorClass;
         tr.innerHTML = `
-            <td class="p-4 font-mono text-xs">${item.barcodeId}</td>
-            <td class="p-4 font-semibold">${item.drugName}</td>
-            <td class="p-4">${item.lotNumber}</td>
+            <td class="p-4 font-mono text-xs">${item.barcodeId || ''}</td>
+            <td class="p-4 font-semibold">${item.drugName || ''}</td>
+            <td class="p-4">${item.lotNumber || ''}</td>
             <td class="p-4">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
-            <td class="p-4 text-center font-bold">${item.qty}</td>
-            <td class="p-4">${item.unit}</td>
+            <td class="p-4 text-center font-bold">${item.qty || 0}</td>
+            <td class="p-4">${item.unit || ''}</td>
             <td class="p-4 text-xs">${item.storage || '-'}</td>
             <td class="p-4 text-xs italic text-slate-400">${item.note || '-'}</td>
         `;
@@ -162,27 +193,34 @@ function filterByType(type) {
     document.querySelectorAll("#type-pills button").forEach(b => {
         b.className = "text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors pill-inactive";
     });
-    window.event.currentTarget.className = "text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors pill-active";
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.className = "text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors pill-active";
+    }
     renderInspectList();
 }
 
 function searchMedicines() {
-    APP_STATE.activeSearch = document.getElementById("search-box").value.toLowerCase();
-    renderInspectList();
+    const searchBox = document.getElementById("search-box");
+    if (searchBox) {
+        APP_STATE.activeSearch = searchBox.value.toLowerCase();
+        renderInspectList();
+    }
 }
 
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
+    if (!container) return;
     container.innerHTML = "";
 
     let filteredMaster = APP_STATE.master.filter(item => {
+        if (!item.drugName || !item.barcodeId) return false;
         const matchesType = (APP_STATE.activeType === 'ALL' || item.type === APP_STATE.activeType);
         const matchesSearch = (item.drugName.toLowerCase().includes(APP_STATE.activeSearch) || item.barcodeId.toString().includes(APP_STATE.activeSearch));
         return matchesType && matchesSearch;
     });
 
     filteredMaster.forEach(drug => {
-        const drugLots = APP_STATE.lots.filter(l => l.barcodeId.toString() === drug.barcodeId.toString());
+        const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
         const totalLotsCount = drugLots.length;
         const inspectedLotsCount = drugLots.filter(l => l.isInspected === true).length;
         
@@ -202,7 +240,7 @@ function renderInspectList() {
             <div class="space-y-1">
                 <span class="text-[10px] uppercase px-1.5 py-0.5 rounded-sm font-bold bg-slate-100 text-slate-600">${drug.type || 'ทั่วไป'}</span>
                 <h4 class="font-bold text-slate-800 text-sm mt-1">${drug.drugName}</h4>
-                <p class="text-xs text-slate-400 font-mono">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit}</p>
+                <p class="text-xs text-slate-400 font-mono">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit || '-'}</p>
             </div>
             <div class="text-right shrink-0">${statusBadge}</div>
         `;
@@ -213,6 +251,8 @@ function renderInspectList() {
 // 6. ระบบเปิดใช้งานกล้องมือถือสแกนบาร์โค้ดด้านหลัง
 function toggleScanner() {
     const readerDiv = document.getElementById("qr-reader");
+    if (!readerDiv) return;
+    
     if(readerDiv.classList.contains("hidden")) {
         readerDiv.classList.remove("hidden");
         APP_STATE.scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 });
@@ -220,7 +260,7 @@ function toggleScanner() {
             document.getElementById("search-box").value = decodedText;
             APP_STATE.activeSearch = decodedText.toLowerCase();
             renderInspectList();
-            toggleScanner(); // ปิดกล้องหลังเจอ
+            toggleScanner(); 
         });
     } else {
         if(APP_STATE.scanner) APP_STATE.scanner.clear();
@@ -232,6 +272,8 @@ function toggleScanner() {
 function openModal(barcodeId) {
     APP_STATE.selectedBarcode = barcodeId;
     const drug = APP_STATE.master.find(m => m.barcodeId.toString() === barcodeId.toString());
+    if (!drug) return;
+    
     document.getElementById("modal-drug-name").innerText = drug.drugName;
     document.getElementById("modal-barcode-id").innerText = "รหัสบาร์โค้ด: " + drug.barcodeId;
     
@@ -241,7 +283,6 @@ function openModal(barcodeId) {
 
 function closeModal() {
     document.getElementById("lot-modal").classList.add("hidden");
-    // รีเซ็ตค่าช่องกรอกข้อมูลในโมดอล
     document.getElementById("lot-number").value = "";
     document.getElementById("lot-exp").value = "";
     document.getElementById("lot-qty").value = "";
@@ -251,8 +292,11 @@ function closeModal() {
 
 function renderModalLots() {
     const container = document.getElementById("modal-lots-list");
+    if (!container) return;
     container.innerHTML = "";
-    const drugLots = APP_STATE.lots.filter(l => l.barcodeId.toString() === APP_STATE.selectedBarcode.toString());
+    
+    if (!APP_STATE.selectedBarcode) return;
+    const drugLots = APP_STATE.lots.filter(l => l.barcodeId && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString());
 
     if(drugLots.length === 0) {
         container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">ไม่พบประวัติล็อตย่อยในขณะนี้</p>`;
@@ -264,9 +308,9 @@ function renderModalLots() {
         div.className = `p-3 rounded-lg border text-xs flex justify-between items-center ${lot.isInspected ? 'bg-emerald-50/50 border-emerald-200':'bg-slate-50 border-slate-200'}`;
         div.innerHTML = `
             <div>
-                <p class="font-bold">Lot: ${lot.lotNumber} | <span class="text-rose-600 font-semibold">EXP: ${new Date(lot.expDate).toLocaleDateString('th-TH')}</span></p>
-                <p class="text-slate-500 mt-0.5">จำนวน: ${lot.qty} | ที่เก็บ: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
-                ${lot.isInspected ? `<p class="text-[10px] text-emerald-600 font-medium">✓ ตรวจแล้วโดย ${lot.inspector}</p>` : ''}
+                <p class="font-bold">Lot: ${lot.lotNumber || 'ไม่ระบุ'} | <span class="text-rose-600 font-semibold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
+                <p class="text-slate-500 mt-0.5">จำนวน: ${lot.qty || 0} | ที่เก็บ: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
+                ${lot.isInspected ? `<p class="text-[10px] text-emerald-600 font-medium">✓ ตรวจแล้วโดย ${lot.inspector || 'เจ้าหน้าที่'}</p>` : ''}
             </div>
             <div class="flex gap-1">
                 <button onclick="inspectSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 rounded font-semibold">ตรวจเฉพาะล็อต</button>
@@ -297,6 +341,7 @@ async function submitLotForm() {
     try {
         const res = await fetch(API_URL, {
             method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ action: "saveLot", data: lotData })
         });
         const result = await res.json();
@@ -304,7 +349,6 @@ async function submitLotForm() {
             await reloadDataFromServer();
             renderModalLots();
             Swal.fire("สำเร็จ", "บันทึกข้อมูลล็อตเรียบร้อย", "success");
-            // ล้างฟอร์ม
             document.getElementById("lot-number").value = "";
             document.getElementById("lot-exp").value = "";
             document.getElementById("lot-qty").value = "";
@@ -314,7 +358,7 @@ async function submitLotForm() {
 
 async function inspectSpecificLot(lotNumber) {
     showLoading("กำลังยืนยันสถานะล็อต...");
-    const currentLot = APP_STATE.lots.find(l => l.barcodeId.toString() === APP_STATE.selectedBarcode.toString() && l.lotNumber.toString() === lotNumber.toString());
+    const currentLot = APP_STATE.lots.find(l => l.barcodeId && APP_STATE.selectedBarcode && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString() && l.lotNumber.toString() === lotNumber.toString());
     if(!currentLot) return;
 
     currentLot.isInspected = true;
@@ -322,7 +366,11 @@ async function inspectSpecificLot(lotNumber) {
     currentLot.inspectionTime = new Date().toISOString();
 
     try {
-        await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "saveLot", data: currentLot }) });
+        await fetch(API_URL, { 
+            method: "POST", 
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "saveLot", data: currentLot }) 
+        });
         await reloadDataFromServer();
         renderModalLots();
         Swal.fire("ตรวจแล้ว", `ยืนยันความถูกต้องเฉพาะ Lot: ${lotNumber} เรียบร้อย`, "success");
@@ -342,7 +390,11 @@ function deleteSpecificLot(lotNumber) {
         if (result.isConfirmed) {
             showLoading("กำลังทำลายข้อมูลล็อต...");
             try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "deleteLot", barcodeId: APP_STATE.selectedBarcode, lotNumber: lotNumber }) });
+                await fetch(API_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "deleteLot", barcodeId: APP_STATE.selectedBarcode, lotNumber: lotNumber }) 
+                });
                 await reloadDataFromServer();
                 renderModalLots();
                 Swal.fire("ลบสำเร็จ", "ลบข้อมูลล็อดยาที่เลือกเรียบร้อยแล้ว", "success");
@@ -354,7 +406,11 @@ function deleteSpecificLot(lotNumber) {
 async function submitFinalVerify() {
     showLoading("กำลังส่งบันทึกความสมบูรณ์...");
     try {
-        await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "confirmInspection", barcodeId: APP_STATE.selectedBarcode, inspector: APP_STATE.user }) });
+        await fetch(API_URL, { 
+            method: "POST", 
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "confirmInspection", barcodeId: APP_STATE.selectedBarcode, inspector: APP_STATE.user }) 
+        });
         await reloadDataFromServer();
         closeModal();
         renderInspectList();
@@ -365,18 +421,22 @@ async function submitFinalVerify() {
 // 9. สิทธิ์ ADMIN (เพิ่ม / ลบ ยาจากผังยาหลักหลัก)
 function renderAdminList() {
     const container = document.getElementById("admin-drug-list");
+    if (!container) return;
     container.innerHTML = "";
     const q = document.getElementById("admin-search").value.toLowerCase();
 
-    const filtered = APP_STATE.master.filter(m => m.drugName.toLowerCase().includes(q) || m.barcodeId.toString().includes(q));
+    const filtered = APP_STATE.master.filter(m => {
+        if (!m.drugName || !m.barcodeId) return false;
+        return m.drugName.toLowerCase().includes(q) || m.barcodeId.toString().includes(q);
+    });
     
     filtered.forEach(drug => {
         const div = document.createElement("div");
-        div.className = "p-3 flex justify-between items-center text-xs";
+        div.className = "p-3 flex justify-between items-center text-xs border-b border-slate-100";
         div.innerHTML = `
             <div>
                 <p class="font-bold">${drug.drugName}</p>
-                <p class="text-slate-400">Barcode: ${drug.barcodeId} | กลุ่ม: ${drug.type}</p>
+                <p class="text-slate-400">Barcode: ${drug.barcodeId} | กลุ่ม: ${drug.type || 'ทั่วไป'}</p>
             </div>
             <button onclick="deleteDrugMaster('${drug.barcodeId}')" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded">ลบรายการหลัก</button>
         `;
@@ -399,13 +459,16 @@ async function submitNewDrug() {
     const drug = { barcodeId: id, drugName: name, unit: unit, stock: Number(stock || 0), storage: storage, type: type };
 
     try {
-        const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminAddDrug", drug: drug }) });
+        const res = await fetch(API_URL, { 
+            method: "POST", 
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "adminAddDrug", drug: drug }) 
+        });
         const result = await res.json();
         if(result.success) {
             await reloadDataFromServer();
             renderAdminList();
             Swal.fire("บันทึกแล้ว", "เพิ่มยาตัวใหม่เข้าสู่ระบบคลังสำเร็จ", "success");
-            // เคลียร์ค่าฟอร์ม
             document.getElementById("add-barcode").value = "";
             document.getElementById("add-name").value = "";
         } else {
@@ -427,7 +490,11 @@ function deleteDrugMaster(barcodeId) {
         if(result.isConfirmed) {
             showLoading("กำลังทำลายข้อมูลถาวร...");
             try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "adminDeleteDrug", barcodeId: barcodeId }) });
+                await fetch(API_URL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ action: "adminDeleteDrug", barcodeId: barcodeId }) 
+                });
                 await reloadDataFromServer();
                 renderAdminList();
                 Swal.fire("ลบสำเร็จ", "ลบข้อมูลยาออกจากโครงสร้างคลังหลักสำเร็จ", "success");
@@ -445,27 +512,27 @@ function generateReport(reportType) {
 
     const start = new Date(startStr);
     const end = new Date(endStr);
-    end.setHours(23,59,59,999); // ปรับครอบคลุมจุดสิ้นสุดของวันนั้นๆ
+    end.setHours(23,59,59,999); 
 
     const preview = document.getElementById("report-preview-container");
+    if (!preview) return;
     preview.classList.remove("hidden");
     preview.innerHTML = "";
 
-    // ข้อมูลพาดหัวพิมพ์รายงาน
     let headerHTML = `
         <div class="print-header text-center mb-4">
             <h1 class="text-lg font-bold">${reportType === 'all' ? '6.1 รายงานข้อมูลยารวมและสรุปทุกล็อตคลังยา CATH LAB':'6.2 รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน'}</h1>
             <p class="text-xs text-slate-500 mt-0.5">ช่วงเวลาประเมินผล: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
-            <p class="text-[11px] text-slate-400">ผู้พิมพ์รายงาน: ${APP_STATE.user} | วันและเวลาพิมพ์: ${new Date().toLocaleString('th-TH')}</p>
+            <p class="text-[11px] text-slate-400">ผู้พิมพ์รายงาน: ${APP_STATE.user || '-'} | วันและเวลาพิมพ์: ${new Date().toLocaleString('th-TH')}</p>
         </div>
-        <button onclick="printReport('report-preview-container')" class="no-print mb-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold">🖨️ สั่งพิมพ์เอกสารนี้ (ประหยัดกระดาษ)</button>
+        <button onclick="printReport('report-preview-container')" class="no-print mb-4 px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold">🖨️ สั่งพิมพ์เอกสารนี้</button>
     `;
 
     let tableHTML = "";
 
     if(reportType === 'all') {
         tableHTML = `
-            <table class="w-full text-xs text-left border-collapse">
+            <table class="w-full text-xs text-left border-collapse border border-slate-200">
                 <thead class="bg-slate-100 font-bold">
                     <tr>
                         <th class="p-2 border">บาร์โค้ด</th><th class="p-2 border">ชื่อสินค้า/ตัวยา</th>
@@ -475,14 +542,15 @@ function generateReport(reportType) {
                 </thead><tbody>
         `;
         APP_STATE.lots.forEach(lot => {
+            if (!lot.expDate) return;
             const exp = new Date(lot.expDate);
             if(exp >= start && exp <= end) {
-                const med = APP_STATE.master.find(m => m.barcodeId.toString() === lot.barcodeId.toString());
+                const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
                 tableHTML += `
                     <tr>
-                        <td class="p-2 border font-mono">${lot.barcodeId}</td><td class="p-2 border font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
-                        <td class="p-2 border">${lot.lotNumber}</td><td class="p-2 border">${exp.toLocaleDateString('th-TH')}</td>
-                        <td class="p-2 border text-center font-bold">${lot.qty}</td><td class="p-2 border">${med ? med.unit : '-'}</td>
+                        <td class="p-2 border font-mono">${lot.barcodeId || ''}</td><td class="p-2 border font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
+                        <td class="p-2 border">${lot.lotNumber || ''}</td><td class="p-2 border">${exp.toLocaleDateString('th-TH')}</td>
+                        <td class="p-2 border text-center font-bold">${lot.qty || 0}</td><td class="p-2 border">${med ? med.unit : '-'}</td>
                         <td class="p-2 border">${lot.storage || '-'}</td>
                     </tr>
                 `;
@@ -490,9 +558,8 @@ function generateReport(reportType) {
         });
         tableHTML += "</tbody></table>";
     } else {
-        // 6.2 รายงานสถานะการตรวจประจำเดือน
         tableHTML = `
-            <table class="w-full text-xs text-left border-collapse">
+            <table class="w-full text-xs text-left border-collapse border border-slate-200">
                 <thead class="bg-slate-100 font-bold">
                     <tr>
                         <th class="p-2 border">ชื่อสินค้า / ยาหลัก</th><th class="p-2 border">ประเภท</th>
@@ -502,16 +569,17 @@ function generateReport(reportType) {
                 </thead><tbody>
         `;
         APP_STATE.lots.forEach(lot => {
-            const insTime = lot.inspectionTime ? new Date(lot.inspectionTime) : null;
-            if(insTime && insTime >= start && insTime <= end) {
-                const med = APP_STATE.master.find(m => m.barcodeId.toString() === lot.barcodeId.toString());
+            if (!lot.inspectionTime) return;
+            const insTime = new Date(lot.inspectionTime);
+            if(insTime >= start && insTime <= end) {
+                const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
                 tableHTML += `
                     <tr>
                         <td class="p-2 border font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td><td class="p-2 border">${med ? med.type : '-'}</td>
-                        <td class="p-2 border font-mono">${lot.lotNumber}</td>
+                        <td class="p-2 border font-mono">${lot.lotNumber || ''}</td>
                         <td class="p-2 border text-center text-emerald-600 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
                         <td class="p-2 border">${lot.inspector || '-'}</td>
-                        <td class="p-2 border">${insTime ? insTime.toLocaleDateString('th-TH') : '-'}</td>
+                        <td class="p-2 border">${insTime.toLocaleDateString('th-TH')}</td>
                     </tr>
                 `;
             }
@@ -523,8 +591,7 @@ function generateReport(reportType) {
 }
 
 function printReport(containerId) {
-    // ป้อนข้อมูลผู้ใช้งานเข้าสู่หัวกระดาษพิมพ์จริง
-    document.querySelectorAll(".print-by").forEach(el => el.innerText = APP_STATE.user);
+    document.querySelectorAll(".print-by").forEach(el => el.innerText = APP_STATE.user || '-');
     document.querySelectorAll(".print-at").forEach(el => el.innerText = new Date().toLocaleString('th-TH'));
     window.print();
 }
@@ -541,7 +608,7 @@ function handleLogout() {
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
         if (result.isConfirmed) {
-            location.reload(); // เคลียร์ตัวแปร State ปลอดภัยที่สุด
+            location.reload(); 
         }
     });
 }
