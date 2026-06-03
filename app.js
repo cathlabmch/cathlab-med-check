@@ -1,5 +1,5 @@
 // เปลี่ยนข้อความด้านล่างเป็น Web App URL ที่ได้จากการ Deploy Google Apps Script
-const API_URL = "https://script.google.com/macros/s/AKfycbzHv0xMdwur0PEEiBV-BoP7_1eNZCQiW4btmVMnRanH4ObMVFPsDSTwP35-rRKOIQI_/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyCG5h6hCagw0Lh_CAwVuTw-a5yneALPcbSx_f5cwlfRJMvt2JSvQJ4I9V6urtiRqJg/exec";
 
 // สร้าง State เก็บข้อมูลในเว็บเพื่อลดการกดเรียกฐานข้อมูลบ่อยครั้ง
 let APP_STATE = {
