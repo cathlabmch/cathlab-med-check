@@ -24,6 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) btnLogout.addEventListener("click", handleLogout);
+
+    // [เพิ่มเติมเพื่อรองรับปุ่มพิมพ์หน้า Dashboard เดิม]
+    const btnPrintDashboard = document.querySelector(".btn-print-dashboard") || document.querySelector("button[onclick*='print']");
+    if (btnPrintDashboard && !btnPrintDashboard.getAttribute("onclick")) {
+        btnPrintDashboard.addEventListener("click", () => printReport('dashboard'));
+    }
 });
 
 function showLoading(msg = "กำลังบันทึกข้อมูล...") {
@@ -175,10 +181,10 @@ function renderDashboard() {
 
     filtered.sort((a, b) => new Date(a.expDate) - new Date(b.expDate));
 
+    // กำหนดคลาสระบุตัวตนสำหรับการสั่งพิมพ์แบบ All-inclusive
     const tableEl = tbody.closest("table");
     if (tableEl) {
-        tableEl.removeAttribute("border");
-        tableEl.style.borderCollapse = "";
+        tableEl.classList.add("official-print-table");
     }
 
     filtered.forEach(item => {
@@ -203,15 +209,13 @@ function renderDashboard() {
         tr.className = `${colorClass} hover:bg-slate-100/50 transition-colors border-b border-slate-100/60`;
         
         tr.innerHTML = `
-            <td class="p-4 font-mono text-xs font-semibold">${item.barcodeId || ''}</td>
+            <td class="p-4 font-mono text-xs font-semibold text-center">${item.barcodeId || ''}</td>
             <td class="p-4 font-bold text-xs sm:text-sm text-slate-700">${item.drugName || ''}</td>
-            <td class="p-4 text-xs font-medium">${item.lotNumber || ''}</td>
-            <td class="p-4 text-xs font-medium">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
-            <td class="p-4 text-center">
-                ${monthBadge}
-            </td>
+            <td class="p-4 text-xs font-medium text-center">${item.lotNumber || ''}</td>
+            <td class="p-4 text-xs font-medium text-center">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
+            <td class="p-4 text-center">${monthBadge}</td>
             <td class="p-4 text-center font-black text-sm text-slate-800">${item.qty || 0}</td>
-            <td class="p-4 text-xs font-medium text-slate-500">${item.unit || ''}</td>
+            <td class="p-4 text-xs font-medium text-slate-500 text-center">${item.unit || ''}</td>
             <td class="p-4 text-xs font-medium text-slate-600">${item.storage || '-'}</td>
             <td class="p-4 text-xs italic text-slate-400 font-medium">${item.note || '-'}</td>
         `;
@@ -574,7 +578,6 @@ function deleteDrugMaster(barcodeId) {
     });
 }
 
-// 2. หน้าพิมพ์รายงาน (REPORT): ปรับให้พรีวิวสวยงาม และดึงข้อมูลยารวม-สถานะตรวจจัดรูปแบบพอดีหน้ากระดาษ A4
 function generateReport(reportType) {
     const startStr = document.getElementById("report-start").value;
     const endStr = document.getElementById("report-end").value;
@@ -604,7 +607,7 @@ function generateReport(reportType) {
                     <span><strong>วันและเวลาพิมพ์:</strong> <span class="print-at">${new Date().toLocaleString('th-TH')} น.</span></span>
                 </div>
             </div>
-            <button onclick="printReport()" class="no-print mb-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm" style="margin-bottom: 15px; padding: 10px 18px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            <button onclick="printReport('report')" class="no-print mb-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm" style="margin-bottom: 15px; padding: 10px 18px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                 🖨️ สั่งพิมพ์รายงานทางการฉบับนี้ (พอดีหน้ากระดาษ A4)
             </button>
     `;
@@ -618,13 +621,13 @@ function generateReport(reportType) {
                 <table class="official-print-table" border="1" style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'Sarabun', Arial, sans-serif; border: 1.5px solid #000000;">
                     <thead>
                         <tr style="background-color: #cbd5e1;">
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 12%;">รหัสบาร์โค้ด</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 30%;">ชื่อสินค้า / ตัวยา</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 14%;">รหัสบาร์โค้ด</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 32%;">ชื่อสินค้า / ตัวยา</th>
                             <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 12%;">Lot Number</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 13%;">วันหมดอายุ (EXP)</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 10%;">จำนวนคงคลัง</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 14%;">วันหมดอายุ (EXP)</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 10%;">จำนวน</th>
                             <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 8%;">หน่วย</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 15%;">สถานที่จัดเก็บ</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 10%;">ที่เก็บ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -661,15 +664,15 @@ function generateReport(reportType) {
         }
         tableHTML += "</tbody></table></div></div>";
 
-    // --- แบบที่ 2: รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน (ปรับตามตารางเช็คยาเรียงไปทางขวา) ---
+    // --- แบบที่ 2: รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน ---
     } else {
         tableHTML = `
             <div style="width: 100%; overflow-x: auto;">
                 <table class="official-print-table" border="1" style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'Sarabun', Arial, sans-serif; border: 1.5px solid #000000;">
                     <thead>
                         <tr style="background-color: #cbd5e1;">
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 12%;">รหัสบาร์โค้ด</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 25%;">ชื่อสินค้า / ยาหลัก</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 15%;">รหัสบาร์โค้ด</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 30%;">ชื่อสินค้า / ยาหลัก</th>
                             <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000;">ประวัติบันทึกการตรวจสอบยาประจำเดือน (เรียงวันที่ไปทางขวา ➡️)</th>
                         </tr>
                     </thead>
@@ -683,7 +686,6 @@ function generateReport(reportType) {
             const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
             let checkedLots = drugLots.filter(l => l.isInspected === true);
             
-            // เรียงลำดับจากวันที่ตรวจสอบเก่าไปใหม่
             checkedLots.sort((a, b) => new Date(a.inspectionTime) - new Date(b.inspectionTime));
 
             const isAllChecked = drugLots.length > 0 && drugLots.every(l => l.isInspected === true);
@@ -696,7 +698,6 @@ function generateReport(reportType) {
             }
         });
 
-        // ดึงยาที่ตรวจครบแล้วมาเรียงตามลำดับวันตรวจสอบของล็อตแรกสุด
         inspectedDrugs.sort((a, b) => {
             const timeA = a.checkedLots[0] ? new Date(a.checkedLots[0].inspectionTime) : 0;
             const timeB = b.checkedLots[0] ? new Date(b.checkedLots[0].inspectionTime) : 0;
@@ -754,8 +755,9 @@ function generateReport(reportType) {
     preview.innerHTML = headerHTML + tableHTML;
 }
 
-// 3. ฟังก์ชันควบคุมการสั่งพิมพ์: แก้ปัญหาขอบล้น บังคับโครงสร้างตารางและ Dashboard ให้พอดีหน้ากระดาษ A4 เสมอ
-function printReport() {
+// [แก้ไขหลักสำหรับข้อ 1 และ 2] ฟังก์ชันควบคุมโครงสร้างสไตล์กระดาษเมื่อกดสั่งพิมพ์
+function printReport(source = 'report') {
+    // บันทึกวันเวลาและผู้จัดพิมพ์ลงในรายงานเสมอ
     document.querySelectorAll(".print-by").forEach(el => el.innerText = APP_STATE.user || '-');
     document.querySelectorAll(".print-at").forEach(el => el.innerText = new Date().toLocaleString('th-TH') + ' น.');
     
@@ -764,52 +766,93 @@ function printReport() {
 
     const styleEl = document.createElement("style");
     styleEl.id = "dynamic-print-css";
-    styleEl.innerHTML = `
-        @media print {
-            body * {
-                visibility: hidden !important;
+
+    // แยกการตั้งค่า CSS ตามแหล่งที่มาของปุ่มพิมพ์ เพื่อให้ตารางหน้า Dashboard และหน้า Report ขึ้นตารางครบถ้วนทั้งสองจุด
+    if(source === 'dashboard') {
+        styleEl.innerHTML = `
+            @media print {
+                body * {
+                    visibility: hidden !important;
+                }
+                /* ดึงพื้นที่ Container ของ Dashboard หรือตารางหลักของแดชบอร์ดขึ้นมาพิมพ์ */
+                #section-dashboard, #section-dashboard * {
+                    visibility: visible !important;
+                }
+                #section-dashboard {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100% !important;
+                }
+                .no-print, button, .nav-item, aside, header {
+                    display: none !important;
+                    visibility: hidden !important;
+                }
+                .official-print-table {
+                    width: 100% !important;
+                    table-layout: fixed !important;
+                    border-collapse: collapse !important;
+                    border: 2px solid #000000 !important;
+                }
+                .official-print-table th, .official-print-table td {
+                    border: 1px solid #000000 !important;
+                    color: #000000 !important;
+                    word-wrap: break-word !important;
+                    white-space: normal !important;
+                    padding: 6px !important;
+                }
             }
-            #report-preview-container, #report-preview-container * {
-                visibility: visible !important;
+        `;
+    } else {
+        styleEl.innerHTML = `
+            @media print {
+                body * {
+                    visibility: hidden !important;
+                }
+                #report-preview-container, #report-preview-container * {
+                    visibility: visible !important;
+                }
+                #report-preview-container {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    box-sizing: border-box !important;
+                }
+                .print-report-wrapper {
+                    width: 100% !important;
+                    padding: 0 !important;
+                }
+                .official-print-table {
+                    width: 100% !important;
+                    table-layout: fixed !important;
+                    border-collapse: collapse !important;
+                    border: 2px solid #000000 !important;
+                }
+                .official-print-table th, .official-print-table td {
+                    border: 1px solid #000000 !important;
+                    color: #000000 !important;
+                    word-wrap: break-word !important;
+                    white-space: normal !important;
+                    padding: 6px !important;
+                }
+                .no-print {
+                    display: none !important;
+                    visibility: hidden !important;
+                }
             }
-            #report-preview-container {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                box-sizing: border-box !important;
-            }
-            .print-report-wrapper {
-                width: 100% !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            .official-print-table {
-                width: 100% !important;
-                table-layout: fixed !important;
-                border-collapse: collapse !important;
-                border: 2px solid #000000 !important;
-            }
-            .official-print-table th, .official-print-table td {
-                border: 1px solid #000000 !important;
-                color: #000000 !important;
-                word-wrap: break-word !important;
-                white-space: normal !important;
-                padding: 6px !important;
-            }
-            .no-print {
-                display: none !important;
-                visibility: hidden !important;
-            }
-        }
-    `;
+        `;
+    }
+    
     document.head.appendChild(styleEl);
 
+    // เปิดเรียกหน้าต่างปริ้นของเบราว์เซอร์
     window.print();
 
+    // ล้าง CSS ชั่วคราวออกเพื่อให้ระบบการแสดงผลบนคอมพิวเตอร์กลับมาปกติหลังพิมพ์เสร็จ
     setTimeout(() => {
         const targetStyle = document.getElementById("dynamic-print-css");
         if(targetStyle) targetStyle.remove();
