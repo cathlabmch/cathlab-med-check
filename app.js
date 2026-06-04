@@ -75,7 +75,6 @@ async function handleLogin() {
             navigate('dashboard');
             Swal.close();
         } else {
-            // ปลอดภัยและไม่แสดงรหัสที่มีในระบบตามที่ขอ
             Swal.fire({
                 title: "ไม่สามารถเข้าสู่ระบบได้",
                 text: "รหัสพนักงานไม่ถูกต้อง หรือไม่พบในระบบปฏิบัติการ CATH LAB โปรดติดต่อผู้ดูแลระบบ",
@@ -94,6 +93,7 @@ async function handleLogin() {
     }
 }
 
+// แก้ไขการ Map ข้อมูลให้ตรงตามโครงสร้างคอลัมน์ Sheet: Medicine_Master ของคุณ
 async function reloadDataFromServer() {
     try {
         const res = await fetch(API_URL, {
@@ -103,8 +103,39 @@ async function reloadDataFromServer() {
         });
         const result = await res.json();
         if(result.success) {
-            APP_STATE.master = result.master || [];
-            APP_STATE.lots = result.lots || [];
+            // ป้องกันข้อมูลคลาดเคลื่อนโดยการแมปตาม Index คอลัมน์ที่แท้จริง (A=0, B=1, C=2, D=3, E=4, F=5)
+            APP_STATE.master = (result.master || []).map(row => {
+                if (Array.isArray(row)) {
+                    return {
+                        barcodeId: row[0] ? row[0].toString().trim() : "",
+                        drugName: row[1] ? row[1].toString().trim() : "ไม่มีชื่อยา",
+                        unit: row[2] ? row[2].toString().trim() : "-",
+                        stock: row[3] ? Number(row[3]) : 0,
+                        storage: row[4] ? row[4].toString().trim() : "-",
+                        type: row[5] ? row[5].toString().trim() : "ทั่วไป"
+                    };
+                }
+                return row; 
+            });
+
+            // แมปข้อมูล Lot ตามโครงสร้างชีตย่อยด้วยเช่นกัน
+            APP_STATE.lots = (result.lots || []).map(row => {
+                if (Array.isArray(row)) {
+                    return {
+                        barcodeId: row[0] ? row[0].toString().trim() : "",
+                        lotNumber: row[1] ? row[1].toString().trim() : "-",
+                        expDate: row[2] ? row[2] : "",
+                        qty: row[3] ? Number(row[3]) : 0,
+                        storage: row[4] ? row[4].toString().trim() : "-",
+                        note: row[5] ? row[5].toString().trim() : "-",
+                        isInspected: row[6] === true || row[6] === "TRUE" || row[6] === "checked",
+                        inspector: row[7] ? row[7].toString().trim() : "",
+                        inspectionTime: row[8] ? row[8] : ""
+                    };
+                }
+                return row;
+            });
+
             renderDashboard();
             renderInspectList();
         }
@@ -116,8 +147,7 @@ async function reloadDataFromServer() {
 function navigate(menu) {
     document.querySelectorAll(".content-section").forEach(s => s.classList.add("hidden"));
     document.querySelectorAll(".nav-item").forEach(i => {
-        i.classList.remove("bg-[#D4EDF4]", "text-[#2C5282]", "shadow-xs");
-        i.classList.add("text-slate-600", "hover:bg-[#D4EDF4]/30");
+        i.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-[#D4EDF4]/30";
     });
 
     const targetSection = document.getElementById(`section-${menu}`);
@@ -125,8 +155,15 @@ function navigate(menu) {
     
     const event = window.event;
     if(event && event.currentTarget) {
-        event.currentTarget.classList.remove("text-slate-600", "hover:bg-[#D4EDF4]/30");
-        event.currentTarget.classList.add("bg-[#D4EDF4]", "text-[#2C5282]", "shadow-xs");
+        event.currentTarget.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-[#D4EDF4] text-[#2C5282] shadow-xs";
+    } else {
+        // Fallback หาปุ่มกรณีเรียกผ่านฟังก์ชันตรงๆ
+        const items = document.querySelectorAll(".nav-item");
+        items.forEach(btn => {
+            if(btn.getAttribute("onclick").includes(menu)) {
+                btn.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-[#D4EDF4] text-[#2C5282] shadow-xs";
+            }
+        });
     }
     
     if(menu === 'dashboard') renderDashboard();
@@ -204,17 +241,14 @@ function searchMedicines() {
     }
 }
 
-// แก้ไขฟังก์ชันแสดงผลกล่องยาให้ตรวจสอบเงื่อนไข Stock และวันหมดอายุราย Lot อย่างละเอียด
+// ปรับปรุงการคำนวณและแสดงผลการ์ดยา หน้าตรวจสอบยา
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
     if (!container) return;
     container.innerHTML = "";
 
-    // กรองประเภทกลุ่มยาโดยตรวจสอบค่าว่างอย่างถี่ถ้วน
     let filteredMaster = APP_STATE.master.filter(item => {
         if (!item.drugName || !item.barcodeId) return false;
-        
-        // บังคับให้การเช็คประเภท Type ตรงกันทั้งหมด
         const drugType = item.type ? item.type.trim() : "";
         const matchesType = (APP_STATE.activeType === 'ALL' || drugType === APP_STATE.activeType);
         const matchesSearch = (item.drugName.toLowerCase().includes(APP_STATE.activeSearch) || item.barcodeId.toString().includes(APP_STATE.activeSearch));
@@ -224,14 +258,13 @@ function renderInspectList() {
     const today = new Date();
 
     filteredMaster.forEach(drug => {
-        // หาชุดล็อตทั้งหมดของยาตัวนี้
         const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
         
-        // 1. คำนวณผลรวมจำนวนยาจริงที่มีอยู่ทุก Lot รวมกัน
+        // 1. รวมยอดจำนวนยาจริงที่มีในคลัง (จากทุกล็อตรวมกัน)
         const currentTotalQty = drugLots.reduce((sum, currentLot) => sum + Number(currentLot.qty || 0), 0);
         const maxStockTarget = Number(drug.stock || 0);
 
-        // 2. ตรวจสอบสถานะวันหมดอายุที่เสี่ยงที่สุดในกลุ่ม Lot
+        // 2. ตรวจสอบสถานะวันหมดอายุของล็อตที่วิกฤตที่สุดในยานี้
         let highestExpRisk = 0; // 0=ปกติ, 3=เสี่ยงต่ำ (6-9 ด.), 2=เสี่ยงกลาง (3-6 ด.), 1=เสี่ยงวิกฤต (0-3 ด.)
         
         drugLots.forEach(lot => {
@@ -240,7 +273,7 @@ function renderInspectList() {
             const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
             
             if(diffMonths <= 3 && diffMonths >= -12) {
-                if(highestExpRisk < 1) highestExpRisk = 1; // ล็อตวิกฤตสูงสุด
+                if(highestExpRisk < 1) highestExpRisk = 1; 
             } else if (diffMonths <= 6 && diffMonths > 3) {
                 if(highestExpRisk === 0 || highestExpRisk > 2) highestExpRisk = 2;
             } else if (diffMonths <= 9 && diffMonths > 6) {
@@ -248,7 +281,7 @@ function renderInspectList() {
             }
         });
 
-        // 3. ประกอบแถบ Badge ตรวจสอบความถูกต้องรายชิ้น
+        // 3. ป้ายสถานะการตรวจเช็ค (Inspected Status Badge)
         const totalLotsCount = drugLots.length;
         const inspectedLotsCount = drugLots.filter(l => l.isInspected === true).length;
         
@@ -261,15 +294,15 @@ function renderInspectList() {
             checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#F9FBBA] text-[#61631F] rounded-md font-bold">⚠️ ค้างตรวจ ${totalLotsCount - inspectedLotsCount}</span>`;
         }
 
-        // 4. สร้าง Badge ตรวจจับยอดขั้นต่ำ (Min Stock)
+        // 4. เงื่อนไข: ตรวจสอบถ้ายาจริงน้อยกว่าเกณฑ์ Max Stock ให้ขึ้นแถบสถานะสีส้มพาสเทลเตือนภัย
         let stockAlertBadge = "";
         if(currentTotalQty < maxStockTarget) {
-            stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#FFE3CD] text-[#A0522D] rounded-md font-bold block mt-1 text-center">⚠️ ต่ำกว่า Stock (มีอยู่ ${currentTotalQty}/${maxStockTarget})</span>`;
+            stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#FFE3CD] text-[#A0522D] rounded-md font-bold block mt-1 text-center">⚠️ ต่ำกว่า Stock (${currentTotalQty}/${maxStockTarget})</span>`;
         } else {
             stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md block mt-1 text-center">ปกติ (${currentTotalQty}/${maxStockTarget})</span>`;
         }
 
-        // 5. สร้างแถบสีกรณีพบล็อตใกล้หมดอายุ (EXP Alert Badge)
+        // 5. ป้ายแจ้งเตือนล็อตยาหมดอายุ
         let expAlertBadge = "";
         if(highestExpRisk === 1) {
             expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#F6C2C2] text-[#7A2E2E] rounded-md font-black block mt-1 text-center animate-pulse">🚨 มี Lot หมดอายุภายใน 3 ด.</span>`;
@@ -284,10 +317,10 @@ function renderInspectList() {
         div.onclick = () => openModal(drug.barcodeId);
         div.innerHTML = `
             <div class="space-y-1 flex-1 pr-2">
-                <span class="text-[9px] uppercase px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">${drug.type ? drug.type.trim() : 'ทั่วไป'}</span>
+                <span class="text-[9px] uppercase px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">${drug.type}</span>
                 <h4 class="font-bold text-slate-700 text-sm mt-1.5 line-clamp-2">${drug.drugName}</h4>
-                <p class="text-xs text-slate-400 font-mono mt-0.5">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit || '-'}</p>
-                <p class="text-[11px] text-slate-500">จุดเก็บหลัก: ${drug.storage || '-'}</p>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit}</p>
+                <p class="text-[11px] text-slate-500">จุดจัดเก็บหลัก: ${drug.storage}</p>
             </div>
             <div class="text-right shrink-0 w-36">
                 ${checkStatusBadge}
@@ -623,7 +656,7 @@ function generateReport(reportType) {
                     <tr class="text-slate-600">
                         <td class="p-2 border border-slate-100 font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td><td class="p-2 border border-slate-100">${med ? med.type : '-'}</td>
                         <td class="p-2 border border-slate-100 font-mono">${lot.lotNumber || ''}</td>
-                        <td class="p-2 border border-slate-100 text-center text-teal-600 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
+                        <td class="p-2 border border-slate-100 text-center text-teal-600 font-bold">${lot.isInspected ? '✓ ตวยสอบแล้ว':'✕ ค้างตรวจ'}</td>
                         <td class="p-2 border border-slate-100">${lot.inspector || '-'}</td>
                         <td class="p-2 border border-slate-100">${insTime.toLocaleDateString('th-TH')}</td>
                     </tr>
