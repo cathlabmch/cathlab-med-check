@@ -9,18 +9,17 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ลงทะเบียนและ Mapping สีจากภาพ image_68c08b.png เข้ากับธีม */
         :root {
             --pt-blue: #D4EDF4;
             --pt-green: #E2F2D5;
             --pt-yellow: #F9FBBA;
             --pt-red: #F6C2C2;
+            --pt-orange: #FFE3CD; /* เพิ่มสีส้มพาสเทลสำหรับแจ้งเตือนยาต่ำกว่า Stock */
             
             --text-dark: #4A5568;
             --text-muted: #718096;
         }
 
-        /* สไตล์เพิ่มเติมสำหรับปุ่มตัวเลือกย่อย */
         .pill-active {
             background-color: var(--pt-blue) !important;
             color: #2C5282 !important;
@@ -34,7 +33,6 @@
         .pill-inactive:hover {
             background-color: #F7FAFC !important;
         }
-        /* ปรับแต่งความละมุนของกล่องข้อความจำลองแบบ Pantone */
         .swal2-popup {
             border-radius: 24px !important;
             color: var(--text-dark) !important;
@@ -43,7 +41,6 @@
 </head>
 <body class="bg-[#F7FAFC] text-[#4A5568] antialiased font-sans">
 
-    <!-- หน้าจอ Login สไตล์พาสเทล Pantone -->
     <div id="login-screen" class="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-[#D4EDF4]/40 via-white to-[#F6C2C2]/20">
         <div class="w-full max-w-sm space-y-6 rounded-3xl bg-white p-8 shadow-xl shadow-slate-100/80 border border-slate-100 text-center">
             <div>
@@ -60,20 +57,16 @@
         </div>
     </div>
 
-    <!-- หน้าจอแอปหลัก -->
     <div id="app-screen" class="hidden min-h-screen flex flex-col md:flex-row">
         
-        <!-- Sidebar ซ้ายสไตล์พาสเทล -->
         <aside class="no-print w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-100 p-5 flex flex-col justify-between shrink-0">
             <div>
-                <!-- กล่องแสดงโปรไฟล์ผู้ปฏิบัติงาน (ใช้สีเขียวพาสเทล #E2F2D5) -->
                 <div class="p-4 bg-[#E2F2D5]/70 rounded-2xl mb-5 border border-[#E2F2D5]">
                     <span class="text-[10px] uppercase font-bold tracking-wider text-[#63824B]">ผู้ปฏิบัติงาน</span>
                     <h3 id="txt-user-name" class="font-extrabold text-slate-700 text-sm truncate mt-0.5">-</h3>
                     <p id="txt-login-time" class="text-[11px] text-[#718096] font-medium mt-1"></p>
                 </div>
                 
-                <!-- เมนูนำทางหลัก (Active เป็นสีฟ้าพาสเทล #D4EDF4) -->
                 <nav id="nav-menu" class="space-y-1.5">
                     <button onclick="navigate('dashboard')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-[#D4EDF4] text-[#2C5282] shadow-xs">📊 Dashboard</button>
                     <button onclick="navigate('inspect')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-[#D4EDF4]/30">🔍 ตรวจสอบยา</button>
@@ -81,16 +74,13 @@
                     <button onclick="navigate('report')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-[#D4EDF4]/30">🖨️ พิมพ์รายงาน</button>
                 </nav>
             </div>
-            <!-- ปุ่มออกจากระบบ (ใช้สีแดงพาสเทล #F6C2C2) -->
             <button id="btn-logout" class="w-full py-2.5 bg-[#F6C2C2]/60 hover:bg-[#F6C2C2] text-[#7A2E2E] text-xs font-bold rounded-xl transition-colors mt-5 cursor-pointer">
                 ออกจากระบบ (Log out)
             </button>
         </aside>
 
-        <!-- โซนแสดงเนื้อหาหลัก -->
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
             
-            <!-- SECTION: DASHBOARD -->
             <section id="section-dashboard" class="content-section space-y-5">
                 <div class="flex items-center justify-between flex-wrap gap-3">
                     <div>
@@ -111,7 +101,7 @@
                                 <th class="p-4 font-semibold">ชื่อสินค้า / ตัวยา</th>
                                 <th class="p-4 font-semibold">Lot</th>
                                 <th class="p-4 font-semibold">วันหมดอายุ</th>
-                                <th class="p-4 text-center font-semibold">จำนวน</th>
+                                <th class="p-4 text-center font-semibold">จำนวนคงคลัง</th>
                                 <th class="p-4 font-semibold">หน่วย</th>
                                 <th class="p-4 font-semibold">จุดจัดเก็บ</th>
                                 <th class="p-4 font-semibold">หมายเหตุ</th>
@@ -122,7 +112,6 @@
                 </div>
             </section>
 
-            <!-- SECTION: INSPECT (ตรวจสอบยา) -->
             <section id="section-inspect" class="content-section hidden space-y-4">
                 <h2 class="text-xl font-extrabold text-slate-800">ตรวจสอบสถานะยาประจำเดือน</h2>
                 
@@ -148,7 +137,6 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="inspect-list-container"></div>
             </section>
 
-            <!-- SECTION: ADMIN -->
             <section id="section-admin" class="content-section hidden space-y-5">
                 <div>
                     <h2 class="text-xl font-extrabold text-[#B85C5C]">สิทธิ์ผู้ดูแลระบบ: จัดการบัญชีคลังยาหลัก</h2>
@@ -159,7 +147,7 @@
                         <input type="text" id="add-barcode" placeholder="รหัสบาร์โค้ด" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
                         <input type="text" id="add-name" placeholder="ชื่อสามัญทางยา / ชื่อค้า" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
                         <input type="text" id="add-unit" placeholder="หน่วยนับ" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
-                        <input type="number" id="add-stock" placeholder="จำนวนคลังตั้งต้น" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="number" id="add-stock" placeholder="จำนวน Max Stock ตั้งต้น" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
                         <input type="text" id="add-storage" placeholder="สถานที่จัดเก็บหลัก" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
                         <select id="add-type" class="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-[#D4EDF4] text-slate-500">
                             <option value="">-- เลือกประเภทกลุ่มยา --</option>
@@ -182,7 +170,6 @@
                 </div>
             </section>
 
-            <!-- SECTION: REPORT -->
             <section id="section-report" class="content-section hidden space-y-5">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-800">ระบบออกรายงานและควบคุมคุณภาพงานตรวจสอบ</h2>
@@ -205,7 +192,6 @@
         </main>
     </div>
 
-    <!-- MODAL: จัดการล็อดยาประจำเดือน -->
     <div id="lot-modal" class="hidden fixed inset-0 bg-slate-900/20 backdrop-blur-xs flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-slate-50">
             <div class="p-4 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
@@ -221,7 +207,7 @@
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" id="lot-number" placeholder="เลขล็อต (Lot ID)" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
                         <input type="date" id="lot-exp" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4] text-slate-400">
-                        <input type="number" id="lot-qty" placeholder="จำนวนคงคลัง" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="number" id="lot-qty" placeholder="จำนวนคงคลังจริง" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
                         <input type="text" id="lot-storage" placeholder="สถานที่เก็บย่อย" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
                     </div>
                     <input type="text" id="lot-note" placeholder="หมายเหตุเพิ่มเติม" class="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
