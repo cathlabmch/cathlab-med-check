@@ -9,77 +9,97 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* สไตล์พาสเทลเพิ่มเติมสำหรับปุ่มประเภทตัวเลือกย่อย */
+        /* ลงทะเบียนและ Mapping สีจากภาพ image_68c08b.png เข้ากับธีม */
+        :root {
+            --pt-blue: #D4EDF4;
+            --pt-green: #E2F2D5;
+            --pt-yellow: #F9FBBA;
+            --pt-red: #F6C2C2;
+            
+            --text-dark: #4A5568;
+            --text-muted: #718096;
+        }
+
+        /* สไตล์เพิ่มเติมสำหรับปุ่มตัวเลือกย่อย */
         .pill-active {
-            background-color: #ccfbf1 !important; /* teal-100 */
-            color: #0f766e !important; /* teal-700 */
-            border-color: #99f6e4 !important; /* teal-200 */
+            background-color: var(--pt-blue) !important;
+            color: #2C5282 !important;
+            border-color: #A3D9E8 !important;
         }
         .pill-inactive {
             background-color: #ffffff !important;
-            color: #475569 !important; /* slate-600 */
-            border-color: #f1f5f9 !important; /* slate-100 */
+            color: var(--text-dark) !important;
+            border-color: #E2E8F0 !important;
         }
         .pill-inactive:hover {
-            background-color: #f0fdfa !important; /* teal-50 */
+            background-color: #F7FAFC !important;
         }
-        /* ปรับแต่งความโค้งมนน่ารักของ SweetAlert2 */
+        /* ปรับแต่งความละมุนของกล่องข้อความจำลองแบบ Pantone */
         .swal2-popup {
             border-radius: 24px !important;
+            color: var(--text-dark) !important;
         }
     </style>
 </head>
-<body class="bg-slate-50/60 text-slate-700 antialiased font-sans">
+<body class="bg-[#F7FAFC] text-[#4A5568] antialiased font-sans">
 
-    <div id="login-screen" class="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-teal-50/50 via-white to-rose-50/30">
-        <div class="w-full max-w-sm space-y-6 rounded-3xl bg-white p-8 shadow-xl shadow-slate-100/70 border border-slate-100 text-center transition-all">
+    <!-- หน้าจอ Login สไตล์พาสเทล Pantone -->
+    <div id="login-screen" class="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-[#D4EDF4]/40 via-white to-[#F6C2C2]/20">
+        <div class="w-full max-w-sm space-y-6 rounded-3xl bg-white p-8 shadow-xl shadow-slate-100/80 border border-slate-100 text-center">
             <div>
-                <h1 class="text-3xl font-black text-teal-400 tracking-tight flex items-center justify-center gap-2">✨ CATH LAB</h1>
+                <h1 class="text-3xl font-black text-[#89C4D6] tracking-tight flex items-center justify-center gap-2">🎨 CATH LAB</h1>
                 <p class="text-slate-400 text-xs mt-1.5 font-medium">ระบบบริหารจัดการและตรวจสอบยาประจำเดือน</p>
             </div>
             <div class="space-y-4">
                 <input type="text" id="input-empid" placeholder="ระบุรหัสพนักงานของคุณ" 
-                    class="w-full text-center py-3 px-4 border border-slate-200 rounded-2xl focus:outline-none focus:border-teal-400 text-lg tracking-wider transition-all placeholder:text-slate-300">
-                <button id="btn-login" class="w-full py-3 bg-teal-400 hover:bg-teal-500 text-white font-bold rounded-2xl shadow-md shadow-teal-100/50 transition-colors cursor-pointer">
+                    class="w-full text-center py-3 px-4 border border-slate-200 rounded-2xl focus:outline-none focus:border-[#D4EDF4] focus:ring-2 focus:ring-[#D4EDF4]/50 text-lg tracking-wider transition-all placeholder:text-slate-300">
+                <button id="btn-login" class="w-full py-3 bg-[#D4EDF4] hover:bg-[#BFE0EB] text-[#2C5282] font-bold rounded-2xl shadow-sm transition-colors cursor-pointer">
                     เข้าสู่ระบบ
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- หน้าจอแอปหลัก -->
     <div id="app-screen" class="hidden min-h-screen flex flex-col md:flex-row">
         
+        <!-- Sidebar ซ้ายสไตล์พาสเทล -->
         <aside class="no-print w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-slate-100 p-5 flex flex-col justify-between shrink-0">
             <div>
-                <div class="p-4 bg-teal-50/40 rounded-2xl mb-5 border border-teal-100/30">
-                    <span class="text-[10px] uppercase font-bold tracking-wider text-teal-500">ผู้ปฏิบัติงาน</span>
+                <!-- กล่องแสดงโปรไฟล์ผู้ปฏิบัติงาน (ใช้สีเขียวพาสเทล #E2F2D5) -->
+                <div class="p-4 bg-[#E2F2D5]/70 rounded-2xl mb-5 border border-[#E2F2D5]">
+                    <span class="text-[10px] uppercase font-bold tracking-wider text-[#63824B]">ผู้ปฏิบัติงาน</span>
                     <h3 id="txt-user-name" class="font-extrabold text-slate-700 text-sm truncate mt-0.5">-</h3>
-                    <p id="txt-login-time" class="text-[11px] text-slate-400/90 font-medium mt-1"></p>
+                    <p id="txt-login-time" class="text-[11px] text-[#718096] font-medium mt-1"></p>
                 </div>
                 
+                <!-- เมนูนำทางหลัก (Active เป็นสีฟ้าพาสเทล #D4EDF4) -->
                 <nav id="nav-menu" class="space-y-1.5">
-                    <button onclick="navigate('dashboard')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-semibold flex items-center gap-3 bg-teal-400 text-white shadow-sm shadow-teal-100/50">📊 Dashboard</button>
-                    <button onclick="navigate('inspect')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-semibold flex items-center gap-3 text-slate-600 hover:bg-teal-50/50">🔍 ตรวจสอบยา</button>
-                    <button onclick="navigate('admin')" id="menu-admin" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-semibold flex items-center gap-3 text-rose-400 hover:bg-rose-50 hidden">⚙️ คลังยาหลัก (Admin)</button>
-                    <button onclick="navigate('report')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-semibold flex items-center gap-3 text-slate-600 hover:bg-teal-50/50">🖨️ พิมพ์รายงาน</button>
+                    <button onclick="navigate('dashboard')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-[#D4EDF4] text-[#2C5282] shadow-xs">📊 Dashboard</button>
+                    <button onclick="navigate('inspect')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-[#D4EDF4]/30">🔍 ตรวจสอบยา</button>
+                    <button onclick="navigate('admin')" id="menu-admin" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-[#B85C5C] hover:bg-[#F6C2C2]/40 hidden">⚙️ คลังยาหลัก (Admin)</button>
+                    <button onclick="navigate('report')" class="nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-[#D4EDF4]/30">🖨️ พิมพ์รายงาน</button>
                 </nav>
             </div>
-            <button id="btn-logout" class="w-full py-2.5 bg-rose-50 text-rose-400 hover:bg-rose-100/70 text-xs font-bold rounded-xl transition-colors mt-5 cursor-pointer">
+            <!-- ปุ่มออกจากระบบ (ใช้สีแดงพาสเทล #F6C2C2) -->
+            <button id="btn-logout" class="w-full py-2.5 bg-[#F6C2C2]/60 hover:bg-[#F6C2C2] text-[#7A2E2E] text-xs font-bold rounded-xl transition-colors mt-5 cursor-pointer">
                 ออกจากระบบ (Log out)
             </button>
         </aside>
 
+        <!-- โซนแสดงเนื้อหาหลัก -->
         <main class="flex-1 p-4 md:p-8 overflow-y-auto">
             
+            <!-- SECTION: DASHBOARD -->
             <section id="section-dashboard" class="content-section space-y-5">
                 <div class="flex items-center justify-between flex-wrap gap-3">
                     <div>
                         <h2 class="text-xl font-extrabold text-slate-800">สรุปรายการยาใกล้หมดอายุภายใน 9 เดือน</h2>
-                        <p class="text-xs text-slate-400 font-medium">เรียงลำดับจากล็อคที่กำลังหมดอายุใกล้ที่สุดแยกตามระดับสีเตือนภัย</p>
+                        <p class="text-xs text-slate-400 font-medium">แยกสีเตือนภัยตามรหัสสี Pantone ละมุนสายตา</p>
                     </div>
                     <button onclick="printReport('print-dashboard')" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer">🖨️ พิมพ์หน้านี้</button>
                 </div>
-                <div id="print-dashboard" class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden table-responsive">
+                <div id="print-dashboard" class="bg-white rounded-3xl shadow-xs border border-slate-100 overflow-hidden table-responsive">
                     <div class="hidden print-header p-5 border-b border-slate-100 text-center">
                         <h1 class="text-xl font-bold">รายงานยาหมดอายุในคลัง CATH LAB (ล่วงหน้า 9 เดือน)</h1>
                         <p class="text-xs mt-1 text-slate-400">ผู้พิมพ์รายงาน: <span class="print-by"></span> | วันที่พิมพ์: <span class="print-at"></span></p>
@@ -102,10 +122,11 @@
                 </div>
             </section>
 
+            <!-- SECTION: INSPECT (ตรวจสอบยา) -->
             <section id="section-inspect" class="content-section hidden space-y-4">
                 <h2 class="text-xl font-extrabold text-slate-800">ตรวจสอบสถานะยาประจำเดือน</h2>
                 
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-4">
                     <div id="type-pills" class="flex flex-wrap gap-2">
                         <button onclick="filterByType('ALL')" class="pill-active text-xs px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">ทั้งหมด (All)</button>
                         <button onclick="filterByType('IV')" class="pill-inactive text-xs px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">IV</button>
@@ -118,8 +139,8 @@
                     </div>
                     <div class="flex gap-2">
                         <input type="text" id="search-box" oninput="searchMedicines()" placeholder="🔍 ค้นหาด้วยชื่อยา, ส่วนประกอบ หรือรหัสบาร์โค้ด..." 
-                            class="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-teal-400">
-                        <button onclick="toggleScanner()" class="px-4 py-2.5 bg-teal-50 text-teal-500 border border-teal-100 rounded-2xl text-xs font-bold hover:bg-teal-100/70 transition-colors flex items-center gap-1.5 cursor-pointer">📷 สแกนกล้อง</button>
+                            class="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-2xl focus:outline-none focus:border-[#D4EDF4]">
+                        <button onclick="toggleScanner()" class="px-4 py-2.5 bg-[#D4EDF4]/50 text-[#2C5282] border border-[#D4EDF4] rounded-2xl text-xs font-bold hover:bg-[#D4EDF4] transition-colors flex items-center gap-1.5 cursor-pointer">📷 สแกนกล้อง</button>
                     </div>
                     <div id="qr-reader" class="mx-auto hidden max-w-sm overflow-hidden rounded-2xl border-2 border-dashed border-slate-200"></div>
                 </div>
@@ -127,20 +148,20 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="inspect-list-container"></div>
             </section>
 
+            <!-- SECTION: ADMIN -->
             <section id="section-admin" class="content-section hidden space-y-5">
                 <div>
-                    <h2 class="text-xl font-extrabold text-rose-400">สิทธิ์ผู้ดูแลระบบ: จัดการบัญชีคลังยาหลัก</h2>
-                    <p class="text-xs text-slate-400 font-medium">สามารถค้นหา เพิ่มเติมรายการยาใหม่ หรือลบยาเดิมที่เลิกใช้งานได้</p>
+                    <h2 class="text-xl font-extrabold text-[#B85C5C]">สิทธิ์ผู้ดูแลระบบ: จัดการบัญชีคลังยาหลัก</h2>
                 </div>
-                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-4">
                     <h3 class="text-sm font-bold text-slate-600">➕ เพิ่มรายการยาใหม่เข้าสู่ระบบ</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        <input type="text" id="add-barcode" placeholder="รหัสบาร์โค้ด" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400">
-                        <input type="text" id="add-name" placeholder="ชื่อสามัญทางยา / ชื่อค้า" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400">
-                        <input type="text" id="add-unit" placeholder="หน่วยนับ (เช่น Amp, Box, Tab)" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400">
-                        <input type="number" id="add-stock" placeholder="จำนวนคลังตั้งต้น" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400">
-                        <input type="text" id="add-storage" placeholder="สถานที่จัดเก็บหลัก" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400">
-                        <select id="add-type" class="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-teal-400 text-slate-500">
+                        <input type="text" id="add-barcode" placeholder="รหัสบาร์โค้ด" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="text" id="add-name" placeholder="ชื่อสามัญทางยา / ชื่อค้า" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="text" id="add-unit" placeholder="หน่วยนับ" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="number" id="add-stock" placeholder="จำนวนคลังตั้งต้น" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="text" id="add-storage" placeholder="สถานที่จัดเก็บหลัก" class="px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4]">
+                        <select id="add-type" class="px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:border-[#D4EDF4] text-slate-500">
                             <option value="">-- เลือกประเภทกลุ่มยา --</option>
                             <option value="IV">IV</option>
                             <option value="HAD">HAD</option>
@@ -151,40 +172,41 @@
                             <option value="ยส.">ยส.</option>
                         </select>
                     </div>
-                    <button onclick="submitNewDrug()" class="px-4 py-2.5 bg-teal-400 text-white rounded-xl text-xs font-bold hover:bg-teal-500 transition-colors cursor-pointer">💾 บันทึกรายการยาเข้า Master</button>
+                    <button onclick="submitNewDrug()" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] rounded-xl text-xs font-bold hover:bg-[#BFE0EB] transition-colors cursor-pointer">💾 บันทึกรายการยาเข้า Master</button>
                 </div>
-                <div class="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                <div class="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden">
                     <div class="p-4 border-b border-slate-50 bg-slate-50/40">
-                        <input type="text" id="admin-search" oninput="renderAdminList()" placeholder="🔎 ค้นหาเพื่อลบรายการยาเดิมที่มีอยู่..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-teal-400 bg-white">
+                        <input type="text" id="admin-search" oninput="renderAdminList()" placeholder="🔎 ค้นหาเพื่อลบรายการยาเดิมที่มีอยู่..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4] bg-white">
                     </div>
                     <div class="divide-y divide-slate-50 max-h-96 overflow-y-auto" id="admin-drug-list"></div>
                 </div>
             </section>
 
+            <!-- SECTION: REPORT -->
             <section id="section-report" class="content-section hidden space-y-5">
                 <div>
                     <h2 class="text-xl font-extrabold text-slate-800">ระบบออกรายงานและควบคุมคุณภาพงานตรวจสอบ</h2>
-                    <p class="text-xs text-slate-400 font-medium">กรองช่วงเวลาที่ต้องการตรวจสอบข้อมูลและสั่งพิมพ์ลงกระดาษแบบประหยัดพื้นที่</p>
                 </div>
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap gap-4 items-end">
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-wrap gap-4 items-end">
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-400">ตั้งแต่วันที่</label>
-                        <input type="date" id="report-start" class="block px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 text-slate-500">
+                        <input type="date" id="report-start" class="block px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4] text-slate-500">
                     </div>
                     <div class="space-y-1">
                         <label class="text-xs font-bold text-slate-400">ถึงวันที่</label>
-                        <input type="date" id="report-end" class="block px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal-400 text-slate-500">
+                        <input type="date" id="report-end" class="block px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4] text-slate-500">
                     </div>
-                    <button onclick="generateReport('all')" class="px-4 py-2.5 bg-teal-400 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer">📊 6.1 รายงานยาและ Lot ทั้งหมด</button>
-                    <button onclick="generateReport('check')" class="px-4 py-2.5 bg-sky-400 hover:bg-sky-500 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer">📝 6.2 รายงานการตรวจประจำเดือน</button>
+                    <button onclick="generateReport('all')" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] text-xs font-bold rounded-xl hover:bg-[#BFE0EB] transition-colors cursor-pointer">📊 6.1 รายงานยาและ Lot ทั้งหมด</button>
+                    <button onclick="generateReport('check')" class="px-4 py-2.5 bg-[#E2F2D5] text-[#4A6B32] text-xs font-bold rounded-xl hover:bg-[#D3E8C4] transition-colors cursor-pointer">📝 6.2 รายงานการตรวจประจำเดือน</button>
                 </div>
-                <div id="report-preview-container" class="hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-sm table-responsive"></div>
+                <div id="report-preview-container" class="hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-xs table-responsive"></div>
             </section>
 
         </main>
     </div>
 
-    <div id="lot-modal" class="hidden fixed inset-0 bg-slate-900/30 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+    <!-- MODAL: จัดการล็อดยาประจำเดือน -->
+    <div id="lot-modal" class="hidden fixed inset-0 bg-slate-900/20 backdrop-blur-xs flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-slate-50">
             <div class="p-4 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
                 <div>
@@ -194,16 +216,16 @@
                 <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer">&times;</button>
             </div>
             <div class="p-5 space-y-4 overflow-y-auto flex-1">
-                <div class="bg-teal-50/30 p-4 rounded-2xl border border-teal-100/20 space-y-3">
-                    <h4 class="text-xs font-bold text-teal-600 uppercase tracking-wider">✨ เพิ่ม/แก้ไข ล็อดยาใหม่</h4>
+                <div class="bg-[#D4EDF4]/30 p-4 rounded-2xl border border-[#D4EDF4]/60 space-y-3">
+                    <h4 class="text-xs font-bold text-[#2C5282] uppercase tracking-wider">✨ เพิ่ม/แก้ไข ล็อดยาใหม่</h4>
                     <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="lot-number" placeholder="เลขล็อต (Lot ID)" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-teal-400">
-                        <input type="date" id="lot-exp" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-teal-400 text-slate-400">
-                        <input type="number" id="lot-qty" placeholder="จำนวนคงคลัง" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-teal-400">
-                        <input type="text" id="lot-storage" placeholder="สถานที่เก็บย่อย" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-teal-400">
+                        <input type="text" id="lot-number" placeholder="เลขล็อต (Lot ID)" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="date" id="lot-exp" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4] text-slate-400">
+                        <input type="number" id="lot-qty" placeholder="จำนวนคงคลัง" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
+                        <input type="text" id="lot-storage" placeholder="สถานที่เก็บย่อย" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
                     </div>
-                    <input type="text" id="lot-note" placeholder="หมายเหตุเพิ่มเติม" class="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-teal-400">
-                    <button onclick="submitLotForm()" class="w-full py-2 bg-teal-400 text-white rounded-xl text-xs font-bold hover:bg-teal-500 transition-colors cursor-pointer">📥 เพิ่ม/อัปเดตล็อตย่อยนี้</button>
+                    <input type="text" id="lot-note" placeholder="หมายเหตุเพิ่มเติม" class="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
+                    <button onclick="submitLotForm()" class="w-full py-2 bg-[#D4EDF4] text-[#2C5282] rounded-xl text-xs font-bold hover:bg-[#BFE0EB] transition-colors cursor-pointer">📥 เพิ่ม/อัปเดตล็อตย่อยนี้</button>
                 </div>
                 <div>
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">📋 รายการล็อตย่อยที่พบในระบบ</h4>
@@ -212,7 +234,7 @@
             </div>
             <div class="p-4 bg-slate-50/60 border-t border-slate-100 flex gap-2">
                 <button onclick="closeModal()" class="flex-1 py-2 bg-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors cursor-pointer">ปิดหน้าต่าง</button>
-                <button id="btn-confirm-all" onclick="submitFinalVerify()" class="flex-1 py-2 bg-teal-400 text-white rounded-xl text-xs font-bold hover:bg-teal-500 transition-colors cursor-pointer">✅ ยืนยันการตรวจสอบยานี้</button>
+                <button id="btn-confirm-all" onclick="submitFinalVerify()" class="flex-1 py-2 bg-[#E2F2D5] text-[#4A6B32] rounded-xl text-xs font-bold hover:bg-[#D3E8C4] transition-colors cursor-pointer">✅ ยืนยันการตรวจสอบยานี้</button>
             </div>
         </div>
     </div>
