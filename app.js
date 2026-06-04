@@ -24,12 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const btnLogout = document.getElementById("btn-logout");
     if (btnLogout) btnLogout.addEventListener("click", handleLogout);
-
-    // [เพิ่มเติมเพื่อรองรับปุ่มพิมพ์หน้า Dashboard เดิม]
-    const btnPrintDashboard = document.querySelector(".btn-print-dashboard") || document.querySelector("button[onclick*='print']");
-    if (btnPrintDashboard && !btnPrintDashboard.getAttribute("onclick")) {
-        btnPrintDashboard.addEventListener("click", () => printReport('dashboard'));
-    }
 });
 
 function showLoading(msg = "กำลังบันทึกข้อมูล...") {
@@ -181,10 +175,10 @@ function renderDashboard() {
 
     filtered.sort((a, b) => new Date(a.expDate) - new Date(b.expDate));
 
-    // กำหนดคลาสระบุตัวตนสำหรับการสั่งพิมพ์แบบ All-inclusive
+    // ผูกคลาสพิมพ์เป็นมาตรฐานเดียวกันทั้งหมดสำหรับการกดพิมพ์แดชบอร์ด
     const tableEl = tbody.closest("table");
     if (tableEl) {
-        tableEl.classList.add("official-print-table");
+        tableEl.classList.add("dashboard-print-target-table");
     }
 
     filtered.forEach(item => {
@@ -607,14 +601,13 @@ function generateReport(reportType) {
                     <span><strong>วันและเวลาพิมพ์:</strong> <span class="print-at">${new Date().toLocaleString('th-TH')} น.</span></span>
                 </div>
             </div>
-            <button onclick="printReport('report')" class="no-print mb-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm" style="margin-bottom: 15px; padding: 10px 18px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+            <button onclick="printReport()" class="no-print mb-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm" style="margin-bottom: 15px; padding: 10px 18px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                 🖨️ สั่งพิมพ์รายงานทางการฉบับนี้ (พอดีหน้ากระดาษ A4)
             </button>
     `;
 
     let tableHTML = "";
 
-    // --- แบบที่ 1: รายงานข้อมูลยารวมและสรุปทุกล็อตคลังยา CATH LAB ---
     if(reportType === 'all') {
         tableHTML = `
             <div style="width: 100%; overflow-x: auto;">
@@ -664,7 +657,6 @@ function generateReport(reportType) {
         }
         tableHTML += "</tbody></table></div></div>";
 
-    // --- แบบที่ 2: รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน ---
     } else {
         tableHTML = `
             <div style="width: 100%; overflow-x: auto;">
@@ -755,104 +747,92 @@ function generateReport(reportType) {
     preview.innerHTML = headerHTML + tableHTML;
 }
 
-// [แก้ไขหลักสำหรับข้อ 1 และ 2] ฟังก์ชันควบคุมโครงสร้างสไตล์กระดาษเมื่อกดสั่งพิมพ์
-function printReport(source = 'report') {
-    // บันทึกวันเวลาและผู้จัดพิมพ์ลงในรายงานเสมอ
-    document.querySelectorAll(".print-by").forEach(el => el.innerText = APP_STATE.user || '-');
-    document.querySelectorAll(".print-at").forEach(el => el.innerText = new Date().toLocaleString('th-TH') + ' น.');
-    
+// [ปรับปรุงสำคัญมาก] ฟังก์ชันคุมหน้าต่างปริ้นให้ครอบคลุมและดึงตารางหน้า Dashboard มาแสดงครบถ้วน ไม่เป็นหน้าว่างเปล่า
+function printReport() {
     const oldStyle = document.getElementById("dynamic-print-css");
     if(oldStyle) oldStyle.remove();
 
     const styleEl = document.createElement("style");
     styleEl.id = "dynamic-print-css";
-
-    // แยกการตั้งค่า CSS ตามแหล่งที่มาของปุ่มพิมพ์ เพื่อให้ตารางหน้า Dashboard และหน้า Report ขึ้นตารางครบถ้วนทั้งสองจุด
-    if(source === 'dashboard') {
-        styleEl.innerHTML = `
-            @media print {
-                body * {
-                    visibility: hidden !important;
-                }
-                /* ดึงพื้นที่ Container ของ Dashboard หรือตารางหลักของแดชบอร์ดขึ้นมาพิมพ์ */
-                #section-dashboard, #section-dashboard * {
-                    visibility: visible !important;
-                }
-                #section-dashboard {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100% !important;
-                }
-                .no-print, button, .nav-item, aside, header {
-                    display: none !important;
-                    visibility: hidden !important;
-                }
-                .official-print-table {
-                    width: 100% !important;
-                    table-layout: fixed !important;
-                    border-collapse: collapse !important;
-                    border: 2px solid #000000 !important;
-                }
-                .official-print-table th, .official-print-table td {
-                    border: 1px solid #000000 !important;
-                    color: #000000 !important;
-                    word-wrap: break-word !important;
-                    white-space: normal !important;
-                    padding: 6px !important;
-                }
+    
+    // บังคับให้ระบบรองรับการปริ้นทั้งหน้า Report Preview และหน้าตารางบนหน้าหลัก Dashboard
+    styleEl.innerHTML = `
+        @media print {
+            /* ซ่อน UI ส่วนเกินที่ไม่เกี่ยวกับการพิมพ์รายงานออกทั้งหมด */
+            body * {
+                visibility: hidden !important;
             }
-        `;
-    } else {
-        styleEl.innerHTML = `
-            @media print {
-                body * {
-                    visibility: hidden !important;
-                }
-                #report-preview-container, #report-preview-container * {
-                    visibility: visible !important;
-                }
-                #report-preview-container {
-                    position: absolute;
-                    left: 0;
-                    top: 0;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    box-sizing: border-box !important;
-                }
-                .print-report-wrapper {
-                    width: 100% !important;
-                    padding: 0 !important;
-                }
-                .official-print-table {
-                    width: 100% !important;
-                    table-layout: fixed !important;
-                    border-collapse: collapse !important;
-                    border: 2px solid #000000 !important;
-                }
-                .official-print-table th, .official-print-table td {
-                    border: 1px solid #000000 !important;
-                    color: #000000 !important;
-                    word-wrap: break-word !important;
-                    white-space: normal !important;
-                    padding: 6px !important;
-                }
-                .no-print {
-                    display: none !important;
-                    visibility: hidden !important;
-                }
+            
+            /* เปิดสิทธิ์ให้ตารางบนหน้า Dashboard และ คอนเทนเนอร์รายงานหลัก แสดงผลตอนพิมพ์ */
+            #section-dashboard, 
+            #section-dashboard .bg-white,
+            #section-dashboard table,
+            #section-dashboard table *,
+            #report-preview-container, 
+            #report-preview-container * {
+                visibility: visible !important;
             }
-        `;
-    }
+            
+            /* รีเซ็ตตำแหน่งตารางให้ยึดหัวกระดาษ A4 เสมอ */
+            #section-dashboard {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            #report-preview-container {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+            }
+            
+            /* ซ่อนเมนูด้านซ้าย, ปุ่มกด และข้อความที่ไม่จำเป็นตอนปริ้น */
+            aside, header, nav, button, .no-print, [onclick*='print'] {
+                display: none !important;
+                visibility: hidden !important;
+            }
+            
+            /* บังคับสไตล์ตารางทุกตัวให้บีบขนาดพอดีหน้ากระดาษ A4 ไม่ล้นขอบขวา */
+            table, .official-print-table, .dashboard-print-target-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                border: 1.5px solid #000000 !important;
+                margin-top: 10px !important;
+            }
+            
+            th, td {
+                border: 1px solid #000000 !important;
+                color: #000000 !important;
+                font-size: 11px !important;
+                padding: 5px !important;
+                word-wrap: break-word !important;
+                white-space: normal !important;
+                overflow: hidden !important;
+            }
+            
+            /* กำหนดขนาดสัดส่วนคอลัมน์ตารางแดชบอร์ดตอนพิมพ์ให้อ่านง่าย */
+            .dashboard-print-target-table th:nth-child(1), .dashboard-print-target-table td:nth-child(1) { width: 12%; font-family: monospace; } /* บาร์โค้ด */
+            .dashboard-print-target-table th:nth-child(2), .dashboard-print-target-table td:nth-child(2) { width: 28%; font-weight: bold; } /* ชื่อยา */
+            .dashboard-print-target-table th:nth-child(3), .dashboard-print-target-table td:nth-child(3) { width: 10%; } /* Lot */
+            .dashboard-print-target-table th:nth-child(4), .dashboard-print-target-table td:nth-child(4) { width: 12%; } /* วันหมดอายุ */
+            .dashboard-print-target-table th:nth-child(5), .dashboard-print-target-table td:nth-child(5) { width: 13%; } /* เหลือเวลา */
+            .dashboard-print-target-table th:nth-child(6), .dashboard-print-target-table td:nth-child(6) { width: 8%; font-weight: bold; }  /* คงคลัง */
+            .dashboard-print-target-table th:nth-child(7), .dashboard-print-target-table td:nth-child(7) { width: 7%; }  /* หน่วย */
+            .dashboard-print-target-table th:nth-child(8), .dashboard-print-target-table td:nth-child(8) { width: 10%; } /* ที่เก็บ */
+        }
+    `;
     
     document.head.appendChild(styleEl);
 
-    // เปิดเรียกหน้าต่างปริ้นของเบราว์เซอร์
+    // สั่งพิมพ์หน้าต่างระบบ
     window.print();
 
-    // ล้าง CSS ชั่วคราวออกเพื่อให้ระบบการแสดงผลบนคอมพิวเตอร์กลับมาปกติหลังพิมพ์เสร็จ
+    // เคลียร์ CSS ออกเพื่อให้หน้าจอกลับมาคลิกทำงานได้ตามปกติ
     setTimeout(() => {
         const targetStyle = document.getElementById("dynamic-print-css");
         if(targetStyle) targetStyle.remove();
