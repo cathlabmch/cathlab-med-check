@@ -142,52 +142,64 @@ function renderDashboard() {
     const tbody = document.getElementById("table-dashboard-body");
     if (!tbody) return;
     tbody.innerHTML = "";
-    
-    const today = new Date();
-    const limitDate = new Date();
-    limitDate.setMonth(today.getMonth() + 9); 
 
-    let filtered = [];
-
-    APP_STATE.lots.forEach(lot => {
-        if (!lot.expDate) return;
+    const now = new Date();
+    // คัดกรองยาที่ใกล้หมดอายุในระยะเวลา 9 เดือน
+    const nearExpLots = APP_STATE.lots.filter(lot => {
+        if (!lot.expDate) return false;
         const exp = new Date(lot.expDate);
-        if(exp >= today && exp <= limitDate) {
-            const masterItem = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
-            filtered.push({ 
-                ...lot, 
-                drugName: masterItem ? masterItem.drugName : "ไม่ระบุชื่อยา", 
-                unit: masterItem ? masterItem.unit : "-" 
-            });
-        }
+        const diffTime = exp - now;
+        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30.44);
+        return diffMonths <= 9;
     });
 
-    filtered.sort((a, b) => new Date(a.expDate) - new Date(b.expDate));
+    // เรียงลำดับตัวที่หมดอายุก่อนขึ้นข้างบนสุด
+    nearExpLots.sort((a, b) => new Date(a.expDate) - new Date(b.expDate));
 
-    filtered.forEach(item => {
-        const exp = new Date(item.expDate);
-        const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
+    if (nearExpLots.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 font-medium">🎉 ยอดเยี่ยม! ไม่พบรายการยาที่ใกล้หมดอายุภายใน 9 เดือน</td></tr>`;
+        return;
+    }
+
+    nearExpLots.forEach(lot => {
+        const med = APP_STATE.master.find(m => m.barcodeId.toString() === lot.barcodeId.toString());
+        const exp = new Date(lot.expDate);
         
-        let colorClass = "";
-        if (diffMonths <= 3) colorClass = "bg-rose-50 border-l-4 border-rose-500 text-rose-900 font-medium"; 
-        else if (diffMonths <= 6) colorClass = "bg-amber-50 border-l-4 border-amber-500 text-amber-900"; 
-        else colorClass = "bg-emerald-50 border-l-4 border-emerald-500 text-emerald-900"; 
+        // คำนวณจำนวนเดือนคงเหลือ
+        const diffTime = exp - now;
+        const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44));
+        
+        // กำหนดข้อความและสี Badge แจ้งเตือนจำนวนเดือนตามระดับความรุนแรง
+        let monthAlertHTML = "";
+        let rowBgClass = "";
+
+        if (diffTime < 0) {
+            monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#F6C2C2] text-[#7A2E2E]">❌ หมดอายุแล้ว</span>`;
+            rowBgClass = "bg-red-50/30"; // แถบสีแดงจางๆ สำหรับตัวที่หมดอายุแล้ว
+        } else if (diffMonths <= 3) {
+            monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FFE3CD] text-[#A04E0E]">⚠️ อีก ${diffMonths} เดือน</span>`;
+            rowBgClass = "bg-orange-50/20";
+        } else {
+            monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#F9FBBA] text-[#716B11]">อีก ${diffMonths} เดือน</span>`;
+        }
 
         const tr = document.createElement("tr");
-        tr.className = colorClass;
+        if(rowBgClass) tr.className = rowBgClass;
+        
         tr.innerHTML = `
-            <td class="p-4 font-mono text-xs">${item.barcodeId || ''}</td>
-            <td class="p-4 font-bold text-xs sm:text-sm">${item.drugName || ''}</td>
-            <td class="p-4 text-xs">${item.lotNumber || ''}</td>
-            <td class="p-4 text-xs">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
-            <td class="p-4 text-center font-black">${item.qty || 0}</td>
-            <td class="p-4 text-xs">${item.unit || ''}</td>
-            <td class="p-4 text-xs">${item.storage || '-'}</td>
-            <td class="p-4 text-xs italic opacity-75">${item.note || '-'}</td>
+            <td class="p-4 font-mono text-xs text-slate-400">${lot.barcodeId}</td>
+            <td class="p-4 font-bold text-slate-700">${med ? med.drugName : '<span class="text-red-400">ไม่พบในฐานหลัก</span>'}</td>
+            <td class="p-4 font-mono text-xs">${lot.lotNumber || '-'}</td>
+            <td class="p-4">${exp.toLocaleDateString('th-TH', {year:'numeric', month:'short', day:'numeric'})}</td>
+            <td class="p-4 text-center">${monthAlertHTML}</td> <td class="p-4 text-center font-bold text-slate-600">${lot.qty}</td>
+            <td class="p-4 text-xs text-slate-400">${med ? med.unit : '-'}</td>
+            <td class="p-4 text-xs font-medium text-slate-500">${lot.storage || (med ? med.storage : '-')}</td>
+            <td class="p-4 text-xs text-slate-400 font-medium">${lot.note || '-'}</td>
         `;
         tbody.appendChild(tr);
     });
 }
+
 
 function filterByType(type) {
     APP_STATE.activeType = type;
@@ -339,35 +351,61 @@ function closeModal() {
 }
 
 function renderModalLots() {
-    const container = document.getElementById("modal-lots-list");
-    if (!container) return;
-    container.innerHTML = "";
-    
-    if (!APP_STATE.selectedBarcode) return;
-    const drugLots = APP_STATE.lots.filter(l => l.barcodeId && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString());
+    const listDiv = document.getElementById("modal-lots-list");
+    if (!listDiv) return;
+    listDiv.innerHTML = "";
 
-    if(drugLots.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">ไม่มีประวัติล็อตย่อยในขณะนี้</p>`;
+    const currentBarcode = APP_STATE.selectedBarcode;
+    const myLots = APP_STATE.lots.filter(l => l.barcodeId.toString() === currentBarcode.toString());
+    const now = new Date();
+
+    if (myLots.length === 0) {
+        listDiv.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-100">ยังไม่มีข้อมูลล็อตย่อยของยานี้ในระบบ</p>`;
         return;
     }
 
-    drugLots.forEach(lot => {
+    myLots.forEach(lot => {
+        const exp = new Date(lot.expDate);
+        
+        // คำนวณจำนวนเดือนคงเหลือสำหรับแสดงในการ์ดหน้าจัดการ Lot
+        const diffTime = exp - now;
+        const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44));
+        
+        let expMonthText = "";
+        if (diffTime < 0) {
+            expMonthText = `<span class="ml-2 text-[10px] font-bold bg-[#F6C2C2] text-[#7A2E2E] px-1.5 py-0.5 rounded-md">หมดอายุแล้ว</span>`;
+        } else if (diffMonths <= 3) {
+            expMonthText = `<span class="ml-2 text-[10px] font-bold bg-[#FFE3CD] text-[#A04E0E] px-1.5 py-0.5 rounded-md">เหลืออีก ${diffMonths} ด.</span>`;
+        } else {
+            expMonthText = `<span class="ml-2 text-[10px] font-bold bg-[#E2F2D5] text-[#4A6B32] px-1.5 py-0.5 rounded-md">เหลืออีก ${diffMonths} ด.</span>`;
+        }
+
         const div = document.createElement("div");
-        div.className = `p-3 rounded-xl border text-xs flex justify-between items-center ${lot.isInspected ? 'bg-emerald-50/50 border-emerald-200':'bg-slate-50 border-slate-200'}`;
+        div.className = `p-3 rounded-2xl border flex items-center justify-between text-xs transition-all ${
+            lot.isInspected ? 'bg-[#E2F2D5]/20 border-[#E2F2D5] text-slate-700' : 'bg-white border-slate-100 shadow-xs'
+        }`;
+
         div.innerHTML = `
-            <div>
-                <p class="font-bold text-slate-700">Lot: ${lot.lotNumber} | <span class="text-rose-600 font-bold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
-                <p class="text-slate-400 mt-0.5">จำนวน: ${lot.qty} | ที่เก็บย่อย: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
-                ${lot.isInspected ? `<p class="text-[10px] text-emerald-600 font-bold mt-0.5">✓ ตรวจแล้วโดย ${lot.inspector}</p>` : ''}
+            <div class="space-y-1">
+                <div class="flex items-center flex-wrap gap-1">
+                    <span class="font-bold text-slate-700">Lot: ${lot.lotNumber}</span>
+                    ${expMonthText} </div>
+                <p class="text-[11px] text-slate-400">
+                    EXP: <span class="font-medium text-slate-600">${exp.toLocaleDateString('th-TH')}</span> | 
+                    คลังย่อย: <span class="font-medium text-slate-600">${lot.storage || '-'}</span>
+                </p>
+                ${lot.note ? `<p class="text-[10px] text-amber-600 font-medium">📝 หมายเหตุ: ${lot.note}</p>` : ''}
+                ${lot.isInspected ? `<p class="text-[10px] text-emerald-600 font-bold">✓ ตรวจแล้วโดย: ${lot.inspector} (${new Date(lot.inspectionTime).toLocaleDateString('th-TH')})</p>` : ''}
             </div>
-            <div class="flex gap-1 shrink-0">
-                <button onclick="inspectSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 rounded-lg text-[11px] font-bold transition-colors cursor-pointer">ตรวจล็อตนี้</button>
-                <button onclick="deleteSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg text-[11px] font-bold transition-colors cursor-pointer">ลบ</button>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="font-black text-sm text-slate-600 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100 min-w-[40px] text-center">${lot.qty}</span>
+                <button onclick="deleteLotRow('${lot.lotNumber}')" class="p-1.5 text-slate-300 hover:text-[#7A2E2E] hover:bg-red-50 rounded-xl transition-colors cursor-pointer" title="ลบล็อตนี้">&times;</button>
             </div>
         `;
-        container.appendChild(div);
+        listDiv.appendChild(div);
     });
 }
+
 
 async function submitLotForm() {
     const num = document.getElementById("lot-number").value.trim();
