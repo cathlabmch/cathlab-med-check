@@ -101,7 +101,8 @@
                                 <th class="p-4 font-semibold">ชื่อสินค้า / ตัวยา</th>
                                 <th class="p-4 font-semibold">Lot</th>
                                 <th class="p-4 font-semibold">วันหมดอายุ</th>
-                                <th class="p-4 text-center font-semibold">เหลือเวลา</th> <th class="p-4 text-center font-semibold">จำนวนคงคลัง</th>
+                                <th class="p-4 text-center font-semibold">เหลือเวลา</th> 
+                                <th class="p-4 text-center font-semibold">จำนวนคงคลัง</th>
                                 <th class="p-4 font-semibold">หน่วย</th>
                                 <th class="p-4 font-semibold">จุดจัดเก็บ</th>
                                 <th class="p-4 font-semibold">หมายเหตุ</th>
@@ -160,73 +161,4 @@
                             <option value="ยส.">ยส.</option>
                         </select>
                     </div>
-                    <button onclick="submitNewDrug()" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] rounded-xl text-xs font-bold hover:bg-[#BFE0EB] transition-colors cursor-pointer">💾 บันทึกรายการยาเข้า Master</button>
-                </div>
-                <div class="bg-white rounded-3xl border border-slate-100 shadow-xs overflow-hidden">
-                    <div class="p-4 border-b border-slate-50 bg-slate-50/40">
-                        <input type="text" id="admin-search" oninput="renderAdminList()" placeholder="🔎 ค้นหาเพื่อลบรายการยาเดิมที่มีอยู่..." class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4] bg-white">
-                    </div>
-                    <div class="divide-y divide-slate-50 max-h-96 overflow-y-auto" id="admin-drug-list"></div>
-                </div>
-            </section>
-
-            <section id="section-report" class="content-section hidden space-y-5">
-                <div>
-                    <h2 class="text-xl font-extrabold text-slate-800">ระบบออกรายงานและควบคุมคุณภาพงานตรวจสอบ</h2>
-                </div>
-                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs flex flex-wrap gap-4 items-end">
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-400">ตั้งแต่วันที่</label>
-                        <input type="date" id="report-start" class="block px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4] text-slate-500">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs font-bold text-slate-400">ถึงวันที่</label>
-                        <input type="date" id="report-end" class="block px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-[#D4EDF4] text-slate-500">
-                    </div>
-                    <button onclick="generateReport('all')" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] text-xs font-bold rounded-xl hover:bg-[#BFE0EB] transition-colors cursor-pointer">📊 6.1 รายงานยาและ Lot ทั้งหมด</button>
-                    <button onclick="generateReport('check')" class="px-4 py-2.5 bg-[#E2F2D5] text-[#4A6B32] text-xs font-bold rounded-xl hover:bg-[#D3E8C4] transition-colors cursor-pointer">📝 6.2 รายงานการตรวจประจำเดือน</button>
-                </div>
-                <div id="report-preview-container" class="hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-xs table-responsive"></div>
-            </section>
-
-        </main>
-    </div>
-
-    <div id="lot-modal" class="hidden fixed inset-0 bg-slate-900/20 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] border border-slate-50">
-            <div class="p-4 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
-                <div>
-                    <h3 id="modal-drug-name" class="font-extrabold text-slate-700 text-base">การจัดการล็อตยา</h3>
-                    <p id="modal-barcode-id" class="text-xs text-slate-400 font-medium font-mono"></p>
-                </div>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl cursor-pointer">&times;</button>
-            </div>
-            <div class="p-5 space-y-4 overflow-y-auto flex-1">
-                <div class="bg-[#D4EDF4]/30 p-4 rounded-2xl border border-[#D4EDF4]/60 space-y-3">
-                    <h4 class="text-xs font-bold text-[#2C5282] uppercase tracking-wider">✨ เพิ่ม/แก้ไข ล็อตยาใหม่</h4>
-                    <div class="grid grid-cols-2 gap-2">
-                        <input type="text" id="lot-number" placeholder="เลขล็อต (Lot ID)" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
-                        <input type="date" id="lot-exp" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4] text-slate-400">
-                        <input type="number" id="lot-qty" placeholder="จำนวนคงคลังจริง" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
-                        
-                        <select id="lot-storage" class="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4] text-slate-700 bg-[image:none]">
-                        </select>
-                    </div>
-                    <input type="text" id="lot-note" placeholder="หมายเหตุเพิ่มเติม" class="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:border-[#D4EDF4]">
-                    <button onclick="submitLotForm()" class="w-full py-2 bg-[#D4EDF4] text-[#2C5282] rounded-xl text-xs font-bold hover:bg-[#BFE0EB] transition-colors cursor-pointer">📥 เพิ่ม/อัปเดตล็อตย่อยนี้</button>
-                </div>
-                <div>
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">📋 รายการล็อตย่อยที่พบในระบบ</h4>
-                    <div id="modal-lots-list" class="space-y-2"></div>
-                </div>
-            </div>
-            <div class="p-4 bg-slate-50/60 border-t border-slate-100 flex gap-2">
-                <button onclick="closeModal()" class="flex-1 py-2 bg-slate-200 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors cursor-pointer">ปิดหน้าต่าง</button>
-                <button id="btn-confirm-all" onclick="submitFinalVerify()" class="flex-1 py-2 bg-[#E2F2D5] text-[#4A6B32] rounded-xl text-xs font-bold hover:bg-[#D3E8C4] transition-colors cursor-pointer">✅ ยืนยันการตรวจสอบยานี้</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
-</html>
+                    <button onclick="submitNewDrug()" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] rounded-xl
