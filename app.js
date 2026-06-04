@@ -75,12 +75,12 @@ async function handleLogin() {
             navigate('dashboard');
             Swal.close();
         } else {
-            // ส่วนที่ปรับปรุง: แจ้งเตือนสั้นๆ สวยงาม และปลอดภัย ไม่แสดงข้อมูลรายชื่อรหัสเดิม
+            // ปลอดภัยและไม่แสดงรหัสที่มีในระบบตามที่ขอ
             Swal.fire({
                 title: "ไม่สามารถเข้าสู่ระบบได้",
-                text: "รหัสพนักงานไม่ถูกต้อง หรือไม่พบในระบบปฏิบัติการ CATH LAB โปรดลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ",
+                text: "รหัสพนักงานไม่ถูกต้อง หรือไม่พบในระบบปฏิบัติการ CATH LAB โปรดติดต่อผู้ดูแลระบบ",
                 icon: "error",
-                confirmButtonColor: "#F6C2C2", // สีชมพูแดงพาสเทลตามธีม Pantone ใหม่ของคุณ
+                confirmButtonColor: "#F6C2C2",
                 confirmButtonText: "ตกลง"
             });
             inputEmp.value = ""; 
@@ -88,7 +88,7 @@ async function handleLogin() {
         }
     } catch (err) {
         console.error("Login Error:", err);
-        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์", "error");
+        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดกับเซิร์ฟเวอร์", "error");
         inputEmp.value = "";
         inputEmp.focus();
     }
@@ -134,7 +134,6 @@ function navigate(menu) {
     if(menu === 'admin') renderAdminList();
 }
 
-// ปรับสีตารางแดชบอร์ดตาม Pantone การแจ้งเตือนความเร่งด่วนหมดอายุ
 function renderDashboard() {
     const tbody = document.getElementById("table-dashboard-body");
     if (!tbody) return;
@@ -166,11 +165,8 @@ function renderDashboard() {
         const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
         
         let colorClass = "";
-        // 0-3 เดือน: สีแดงพาสเทล #F6C2C2
         if (diffMonths <= 3) colorClass = "bg-[#F6C2C2]/50 border-l-4 border-[#F6C2C2] text-[#632525] font-medium"; 
-        // 3-6 เดือน: สีเหลืองพาสเทล #F9FBBA
         else if (diffMonths <= 6) colorClass = "bg-[#F9FBBA]/60 border-l-4 border-[#E2E67A] text-[#52541C]"; 
-        // 6-9 เดือน: สีฟ้าพาสเทลเบาๆ #D4EDF4
         else colorClass = "bg-[#D4EDF4]/30 border-l-4 border-[#B0E2F0] text-[#1F3E47]"; 
 
         const tr = document.createElement("tr");
@@ -208,45 +204,96 @@ function searchMedicines() {
     }
 }
 
-// ปรับสี Badge หน้าเช็คยาตาม Pantone
+// แก้ไขฟังก์ชันแสดงผลกล่องยาให้ตรวจสอบเงื่อนไข Stock และวันหมดอายุราย Lot อย่างละเอียด
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
     if (!container) return;
     container.innerHTML = "";
 
+    // กรองประเภทกลุ่มยาโดยตรวจสอบค่าว่างอย่างถี่ถ้วน
     let filteredMaster = APP_STATE.master.filter(item => {
         if (!item.drugName || !item.barcodeId) return false;
-        const matchesType = (APP_STATE.activeType === 'ALL' || item.type === APP_STATE.activeType);
+        
+        // บังคับให้การเช็คประเภท Type ตรงกันทั้งหมด
+        const drugType = item.type ? item.type.trim() : "";
+        const matchesType = (APP_STATE.activeType === 'ALL' || drugType === APP_STATE.activeType);
         const matchesSearch = (item.drugName.toLowerCase().includes(APP_STATE.activeSearch) || item.barcodeId.toString().includes(APP_STATE.activeSearch));
         return matchesType && matchesSearch;
     });
 
+    const today = new Date();
+
     filteredMaster.forEach(drug => {
+        // หาชุดล็อตทั้งหมดของยาตัวนี้
         const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
+        
+        // 1. คำนวณผลรวมจำนวนยาจริงที่มีอยู่ทุก Lot รวมกัน
+        const currentTotalQty = drugLots.reduce((sum, currentLot) => sum + Number(currentLot.qty || 0), 0);
+        const maxStockTarget = Number(drug.stock || 0);
+
+        // 2. ตรวจสอบสถานะวันหมดอายุที่เสี่ยงที่สุดในกลุ่ม Lot
+        let highestExpRisk = 0; // 0=ปกติ, 3=เสี่ยงต่ำ (6-9 ด.), 2=เสี่ยงกลาง (3-6 ด.), 1=เสี่ยงวิกฤต (0-3 ด.)
+        
+        drugLots.forEach(lot => {
+            if(!lot.expDate) return;
+            const exp = new Date(lot.expDate);
+            const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
+            
+            if(diffMonths <= 3 && diffMonths >= -12) {
+                if(highestExpRisk < 1) highestExpRisk = 1; // ล็อตวิกฤตสูงสุด
+            } else if (diffMonths <= 6 && diffMonths > 3) {
+                if(highestExpRisk === 0 || highestExpRisk > 2) highestExpRisk = 2;
+            } else if (diffMonths <= 9 && diffMonths > 6) {
+                if(highestExpRisk === 0) highestExpRisk = 3;
+            }
+        });
+
+        // 3. ประกอบแถบ Badge ตรวจสอบความถูกต้องรายชิ้น
         const totalLotsCount = drugLots.length;
         const inspectedLotsCount = drugLots.filter(l => l.isInspected === true).length;
         
-        let statusBadge = "";
+        let checkStatusBadge = "";
         if (totalLotsCount === 0) {
-            statusBadge = `<span class="text-xs px-2.5 py-1 bg-slate-100 text-slate-400 rounded-lg font-medium">ไม่มีข้อมูล Lot</span>`;
+            checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-400 rounded-md font-medium">ไม่มี Lot ในระบบ</span>`;
         } else if (inspectedLotsCount === totalLotsCount) {
-            // ตรวจครบแล้ว: สีเขียวพาสเทล #E2F2D5
-            statusBadge = `<span class="text-xs px-2.5 py-1 bg-[#E2F2D5] text-[#4A6B32] rounded-lg font-bold">✅ ตรวจครบแล้ว</span>`;
+            checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#E2F2D5] text-[#4A6B32] rounded-md font-bold">✓ ตรวจครบแล้ว</span>`;
         } else {
-            // ยังตรวจไม่ครบ: สีเหลืองพาสเทล #F9FBBA
-            statusBadge = `<span class="text-xs px-2.5 py-1 bg-[#F9FBBA] text-[#61631F] rounded-lg font-bold">⚠️ ค้างตรวจ ${totalLotsCount - inspectedLotsCount} lot</span>`;
+            checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#F9FBBA] text-[#61631F] rounded-md font-bold">⚠️ ค้างตรวจ ${totalLotsCount - inspectedLotsCount}</span>`;
+        }
+
+        // 4. สร้าง Badge ตรวจจับยอดขั้นต่ำ (Min Stock)
+        let stockAlertBadge = "";
+        if(currentTotalQty < maxStockTarget) {
+            stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#FFE3CD] text-[#A0522D] rounded-md font-bold block mt-1 text-center">⚠️ ต่ำกว่า Stock (มีอยู่ ${currentTotalQty}/${maxStockTarget})</span>`;
+        } else {
+            stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md block mt-1 text-center">ปกติ (${currentTotalQty}/${maxStockTarget})</span>`;
+        }
+
+        // 5. สร้างแถบสีกรณีพบล็อตใกล้หมดอายุ (EXP Alert Badge)
+        let expAlertBadge = "";
+        if(highestExpRisk === 1) {
+            expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#F6C2C2] text-[#7A2E2E] rounded-md font-black block mt-1 text-center animate-pulse">🚨 มี Lot หมดอายุภายใน 3 ด.</span>`;
+        } else if (highestExpRisk === 2) {
+            expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#F9FBBA] text-[#52541C] rounded-md font-bold block mt-1 text-center">⏰ มี Lot หมดอายุภายใน 6 ด.</span>`;
+        } else if (highestExpRisk === 3) {
+            expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#D4EDF4] text-[#1F3E47] rounded-md font-semibold block mt-1 text-center">ℹ️ มี Lot หมดอายุภายใน 9 ด.</span>`;
         }
 
         const div = document.createElement("div");
         div.className = "p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-[#D4EDF4] hover:shadow-md transition-all flex justify-between items-start cursor-pointer";
         div.onclick = () => openModal(drug.barcodeId);
         div.innerHTML = `
-            <div class="space-y-1">
-                <span class="text-[9px] uppercase px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">${drug.type || 'ทั่วไป'}</span>
-                <h4 class="font-bold text-slate-700 text-sm mt-1.5">${drug.drugName}</h4>
-                <p class="text-xs text-slate-400 font-mono">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit || '-'}</p>
+            <div class="space-y-1 flex-1 pr-2">
+                <span class="text-[9px] uppercase px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">${drug.type ? drug.type.trim() : 'ทั่วไป'}</span>
+                <h4 class="font-bold text-slate-700 text-sm mt-1.5 line-clamp-2">${drug.drugName}</h4>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit || '-'}</p>
+                <p class="text-[11px] text-slate-500">จุดเก็บหลัก: ${drug.storage || '-'}</p>
             </div>
-            <div class="text-right shrink-0">${statusBadge}</div>
+            <div class="text-right shrink-0 w-36">
+                ${checkStatusBadge}
+                ${stockAlertBadge}
+                ${expAlertBadge}
+            </div>
         `;
         container.appendChild(div);
     });
@@ -277,7 +324,7 @@ function openModal(barcodeId) {
     if (!drug) return;
     
     document.getElementById("modal-drug-name").innerText = drug.drugName;
-    document.getElementById("modal-barcode-id").innerText = "รหัสบาร์โค้ด: " + drug.barcodeId;
+    document.getElementById("modal-barcode-id").innerText = "รหัสบาร์โค้ด: " + drug.barcodeId + " | Target Stock (Max): " + (drug.stock || 0);
     
     renderModalLots();
     document.getElementById("lot-modal").classList.remove("hidden");
@@ -384,7 +431,7 @@ function deleteSpecificLot(lotNumber) {
         text: `คุณต้องการลบล็อดยาหมายเลข ${lotNumber} หรือไม่`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#F6C2C2', // สีชมพูแดงพาสเทล
+        confirmButtonColor: '#F6C2C2',
         confirmButtonText: 'ลบข้อมูล',
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
@@ -536,7 +583,7 @@ function generateReport(reportType) {
                     <tr>
                         <th class="p-2 border border-slate-100">บาร์โค้ด</th><th class="p-2 border border-slate-100">ชื่อสินค้า/ตัวยา</th>
                         <th class="p-2 border border-slate-100">Lot</th><th class="p-2 border border-slate-100">วันหมดอายุ</th>
-                        <th class="p-2 border border-slate-100 text-center">จำนวน</th><th class="p-2 border border-slate-100">หน่วย</th><th class="p-2 border border-slate-100">สถานที่จัดเก็บ</th>
+                        <th class="p-2 border border-slate-100 text-center">จำนวนคลัง</th><th class="p-2 border border-slate-100">หน่วย</th><th class="p-2 border border-slate-100">สถานที่จัดเก็บ</th>
                     </tr>
                 </thead><tbody>
         `;
@@ -601,8 +648,8 @@ function handleLogout() {
         text: "คุณต้องการล็อกเอาท์ออกจากระบบหรือไม่",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#D4EDF4', // สีฟ้าพาสเทลยืนยัน
-        cancelButtonColor: '#F6C2C2',  // สีแดงพาสเทลยกเลิก
+        confirmButtonColor: '#D4EDF4', 
+        cancelButtonColor: '#F6C2C2',  
         confirmButtonText: 'ยืนยันล็อกเอาท์',
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
