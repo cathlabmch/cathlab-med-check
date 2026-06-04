@@ -169,29 +169,38 @@ function renderDashboard() {
         const diffTime = exp - now;
         const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44));
         
-        // กำหนดข้อความและสี Badge แจ้งเตือนจำนวนเดือนตามระดับความรุนแรง
+        // กำหนดข้อความ Badge และแถบสีจางๆ (rowBgClass) ตามรหัสสี Pantone ละมุนสายตา
         let monthAlertHTML = "";
         let rowBgClass = "";
 
         if (diffTime < 0) {
+            // 🟥 หมดอายุแล้ว: แถบสีแดงจางๆ
             monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#F6C2C2] text-[#7A2E2E]">❌ หมดอายุแล้ว</span>`;
-            rowBgClass = "bg-red-50/30"; // แถบสีแดงจางๆ สำหรับตัวที่หมดอายุแล้ว
+            rowBgClass = "bg-[#F6C2C2]/15 hover:bg-[#F6C2C2]/25 transition-colors"; 
         } else if (diffMonths <= 3) {
+            // 🟧 เหลือ <= 3 เดือน: แถบสีส้มจางๆ
             monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#FFE3CD] text-[#A04E0E]">⚠️ อีก ${diffMonths} เดือน</span>`;
-            rowBgClass = "bg-orange-50/20";
-        } else {
+            rowBgClass = "bg-[#FFE3CD]/20 hover:bg-[#FFE3CD]/35 transition-colors";
+        } else if (diffMonths <= 6) {
+            // 🟨 เหลือ <= 6 เดือน: แถบสีเหลืองจางๆ
             monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#F9FBBA] text-[#716B11]">อีก ${diffMonths} เดือน</span>`;
+            rowBgClass = "bg-[#F9FBBA]/20 hover:bg-[#F9FBBA]/35 transition-colors";
+        } else {
+            // 🟩 เหลือ 7-9 เดือน: แถบสีเขียวจางๆ ปลอดภัยใจชื้น
+            monthAlertHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#E2F2D5] text-[#4A6B32]">อีก ${diffMonths} เดือน</span>`;
+            rowBgClass = "bg-[#E2F2D5]/15 hover:bg-[#E2F2D5]/30 transition-colors";
         }
 
         const tr = document.createElement("tr");
-        if(rowBgClass) tr.className = rowBgClass;
+        // ใส่คลาสแถบสีจาง และเส้นคั่นด้านล่างของแต่ละแถวเพื่อความสวยงาม
+        tr.className = `${rowBgClass} border-b border-slate-100/70`;
         
         tr.innerHTML = `
             <td class="p-4 font-mono text-xs text-slate-400">${lot.barcodeId}</td>
             <td class="p-4 font-bold text-slate-700">${med ? med.drugName : '<span class="text-red-400">ไม่พบในฐานหลัก</span>'}</td>
-            <td class="p-4 font-mono text-xs">${lot.lotNumber || '-'}</td>
-            <td class="p-4">${exp.toLocaleDateString('th-TH', {year:'numeric', month:'short', day:'numeric'})}</td>
-            <td class="p-4 text-center">${monthAlertHTML}</td> <td class="p-4 text-center font-bold text-slate-600">${lot.qty}</td>
+            <td class="p-4 font-mono text-xs text-slate-600">${lot.lotNumber || '-'}</td>
+            <td class="p-4 font-medium text-slate-600">${exp.toLocaleDateString('th-TH', {year:'numeric', month:'short', day:'numeric'})}</td>
+            <td class="p-4 text-center">${monthAlertHTML}</td> <td class="p-4 text-center font-black text-slate-700">${lot.qty}</td>
             <td class="p-4 text-xs text-slate-400">${med ? med.unit : '-'}</td>
             <td class="p-4 text-xs font-medium text-slate-500">${lot.storage || (med ? med.storage : '-')}</td>
             <td class="p-4 text-xs text-slate-400 font-medium">${lot.note || '-'}</td>
