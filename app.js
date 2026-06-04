@@ -281,6 +281,7 @@ function toggleScanner() {
 }
 
 // 🛠️ แก้ไขคุณสมบัติข้อที่ 2: เปลี่ยนช่องพิมพ์สถานที่เก็บย่อยให้ดึงค่าจาก Medicine_Master มาให้เลือก
+// ค้นหาฟังก์ชัน openModal ของเดิมใน app.js แล้ววางโค้ดชุดนี้ทับได้เลยครับ
 function openModal(barcodeId) {
     APP_STATE.selectedBarcode = barcodeId;
     const drug = APP_STATE.master.find(m => m.barcodeId.toString() === barcodeId.toString());
@@ -289,32 +290,40 @@ function openModal(barcodeId) {
     document.getElementById("modal-drug-name").innerText = drug.drugName;
     document.getElementById("modal-barcode-id").innerText = "บาร์โค้ด: " + drug.barcodeId + " | หน่วย: " + drug.unit;
     
-    // ค้นหาสถานที่จัดเก็บหลักจากคอลัมน์ E นำมาใส่เป็นตัวเลือกเริ่มต้นใน Dropdown
+    // 💡 ส่วนแก้ไขหลัก: ดึงข้อมูลสถานที่จัดเก็บจริงจากคอลัมน์ E ของยาหลักตัวนี้มาสร้างเป็น Dropdown ตัวเลือก
     const selectStorage = document.getElementById("lot-storage");
-    if(selectStorage) {
-        selectStorage.innerHTML = ""; // เคลียร์ตัวเลือกเก่าออกก่อน
+    if (selectStorage) {
+        selectStorage.innerHTML = ""; // เคลียร์ตัวเลือกเก่าที่ค้างอยู่ออกก่อน
         
-        // ดึงค่าสถานที่จัดเก็บจริงมาจากประวัติหลัก
-        const mainStorageValue = drug.storage ? drug.storage.trim() : "ไม่ระบุสถานที่";
+        // อ่านค่าจากสถานที่จัดเก็บหลัก (คอลัมน์ E)
+        const mainStorageValue = drug.storage ? drug.storage.trim() : "";
         
-        // แตกตัวเลือกเผื่อกรณีผู้ใช้ใช้เครื่องหมายคอมมาแยกห้องเก็บของ (เช่น คลังA, ตู้เย็น) หรือสร้างรายการเดียวขึ้นมา
-        const optionsArray = mainStorageValue.split(/[,，/]/);
+        if (mainStorageValue && mainStorageValue !== "-") {
+            // เผื่อกรณีในคอลัมน์ E มีการคั่นด้วยเครื่องหมายจุลภาค เช่น "คลังยา, ตู้เย็น, ชั้นวาง A" จะถูกแยกเป็นตัวเลือกให้เลือกง่ายๆ
+            const optionsArray = mainStorageValue.split(/[,，/]/);
+            
+            optionsArray.forEach(opt => {
+                const trimmedOpt = opt.trim();
+                if (trimmedOpt) {
+                    const optionEl = document.createElement("option");
+                    optionEl.value = trimmedOpt;
+                    optionEl.innerText = trimmedOpt;
+                    selectStorage.appendChild(optionEl);
+                }
+            });
+        } else {
+            // ถ้าในคอลัมน์ E ของ Master ไม่ได้ระบุข้อมูลไว้ ให้ขึ้นตัวเลือกพื้นฐาน
+            const defaultOpt = document.createElement("option");
+            defaultOpt.value = "ไม่ระบุสถานที่";
+            defaultOpt.innerText = "ไม่ระบุสถานที่หลัก (คอลัมน์ E ว่าง)";
+            selectStorage.appendChild(defaultOpt);
+        }
         
-        optionsArray.forEach(opt => {
-            const trimmedOpt = opt.trim();
-            if(trimmedOpt) {
-                const optionEl = document.createElement("option");
-                optionEl.value = trimmedOpt;
-                optionEl.innerText = trimmedOpt;
-                selectStorage.appendChild(optionEl);
-            }
-        });
-        
-        // เติมตัวเลือกเพิ่มเติมสำรองไว้เผื่อต้องการเลือกเก็บจุดอื่นนอกเหนือจาก Master
-        const defaultOpt = document.createElement("option");
-        defaultOpt.value = "-";
-        defaultOpt.innerText = "อื่นๆ / ไม่ระบุสถานที่ย่อย";
-        selectStorage.appendChild(defaultOpt);
+        // เพิ่มตัวเลือกเสริม "อื่นๆ" ไว้ท้ายสุดเสมอ เพื่อความยืดหยุ่นในกรณีฉุกเฉิน
+        const otherOpt = document.createElement("option");
+        otherOpt.value = "-";
+        otherOpt.innerText = "อื่นๆ / ไม่ระบุสถานที่ย่อย";
+        selectStorage.appendChild(otherOpt);
     }
     
     renderModalLots();
@@ -364,7 +373,7 @@ async function submitLotForm() {
     const num = document.getElementById("lot-number").value.trim();
     const exp = document.getElementById("lot-exp").value;
     const qty = document.getElementById("lot-qty").value;
-    const storage = document.getElementById("lot-storage").value; // รับค่าจาก Dropdown ที่เลือกแทนอินพุตพิมพ์มือ
+    const storage = document.getElementById("lot-storage").value; // ดึงค่าที่เลือกจาก Dropdown <select> ตัวใหม่
     const note = document.getElementById("lot-note").value.trim();
 
     if(!num || !exp || !qty) return Swal.fire("ข้อมูลไม่ครบ", "โปรดระบุ เลขล็อต, วันหมดอายุ และจำนวนยา", "warning");
@@ -372,8 +381,15 @@ async function submitLotForm() {
     showLoading("กำลังส่งบันทึก...");
 
     const lotData = {
-        barcodeId: APP_STATE.selectedBarcode, lotNumber: num, expDate: exp, qty: Number(qty),
-        storage: storage, note: note, isInspected: false, inspector: "", inspectionTime: ""
+        barcodeId: APP_STATE.selectedBarcode, 
+        lotNumber: num, 
+        expDate: exp, 
+        qty: Number(qty),
+        storage: storage, // ส่งค่าสถานที่ที่เลือกจากคอลัมน์ E ไปบันทึกในแผ่นงาน Lot
+        note: note, 
+        isInspected: false, 
+        inspector: "", 
+        inspectionTime: ""
     };
 
     try {
@@ -390,10 +406,12 @@ async function submitLotForm() {
             document.getElementById("lot-number").value = "";
             document.getElementById("lot-exp").value = "";
             document.getElementById("lot-qty").value = "";
+            document.getElementById("lot-note").value = "";
         }
-    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถบันทึกได้", "error"); }
+    } catch(e) { 
+        Swal.fire("ล้มเหลว", "ไม่สามารถบันทึกได้", "error"); 
+    }
 }
-
 async function inspectSpecificLot(lotNumber) {
     showLoading("กำลังยืนยันล็อต...");
     const currentLot = APP_STATE.lots.find(l => l.barcodeId && APP_STATE.selectedBarcode && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString() && l.lotNumber.toString() === lotNumber.toString());
