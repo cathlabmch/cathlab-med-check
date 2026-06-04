@@ -1,5 +1,7 @@
+// เปลี่ยนข้อความด้านล่างเป็น Web App URL ที่ได้จากการ Deploy Google Apps Script
 const API_URL = "https://script.google.com/macros/s/AKfycbyCG5h6hCagw0Lh_CAwVuTw-a5yneALPcbSx_f5cwlfRJMvt2JSvQJ4I9V6urtiRqJg/exec";
 
+// สร้าง State เก็บข้อมูลในเว็บเพื่อลดการกดเรียกฐานข้อมูลบ่อยครั้ง
 let APP_STATE = {
     user: null,
     role: null,
@@ -11,6 +13,7 @@ let APP_STATE = {
     scanner: null
 };
 
+// เริ่มต้นระบบเมื่อโหลดหน้าเสร็จสิ้น
 document.addEventListener("DOMContentLoaded", () => {
     const inputEmp = document.getElementById("input-empid");
     if (inputEmp) {
@@ -34,6 +37,7 @@ function showLoading(msg = "กำลังบันทึกข้อมูล.
     });
 }
 
+// ระบบประมวลผลการเข้าสู่ระบบ
 async function handleLogin() {
     const inputEmp = document.getElementById("input-empid");
     if (!inputEmp) return;
@@ -73,13 +77,12 @@ async function handleLogin() {
             
             await reloadDataFromServer();
             navigate('dashboard');
-            Swal.close();
         } else {
             Swal.fire({
                 title: "ไม่สามารถเข้าสู่ระบบได้",
-                text: "รหัสพนักงานไม่ถูกต้อง หรือไม่พบในระบบปฏิบัติการ CATH LAB โปรดติดต่อผู้ดูแลระบบ",
+                text: result.message || "รหัสพนักงานไม่ถูกต้อง หรือไม่พบในระบบปฏิบัติการ CATH LAB โปรดติดต่อผู้ดูแลระบบ",
                 icon: "error",
-                confirmButtonColor: "#F6C2C2",
+                confirmButtonColor: "#10b981",
                 confirmButtonText: "ตกลง"
             });
             inputEmp.value = ""; 
@@ -87,13 +90,13 @@ async function handleLogin() {
         }
     } catch (err) {
         console.error("Login Error:", err);
-        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดกับเซิร์ฟเวอร์", "error");
+        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดฝั่งเซิร์ฟเวอร์ฐานข้อมูล", "error");
         inputEmp.value = "";
         inputEmp.focus();
     }
 }
 
-// แก้ไขการ Map ข้อมูลให้ตรงตามโครงสร้างคอลัมน์ Sheet: Medicine_Master ของคุณ
+// ฟังก์ชันโหลดข้อมูลหลัก
 async function reloadDataFromServer() {
     try {
         const res = await fetch(API_URL, {
@@ -103,50 +106,31 @@ async function reloadDataFromServer() {
         });
         const result = await res.json();
         
-        // ตรวจสอบความสมบูรณ์ของโครงสร้างข้อมูลก่อนบันทึกลงเว็บ State
-        if (result.success && result.data) {
+        if(result.success && result.data) {
             APP_STATE.master = result.data.master || [];
             APP_STATE.lots = result.data.lots || [];
 
-            // เรียก Render ข้อมูลขึ้นสู่หน้าจอ
             renderDashboard();
             renderInspectList();
-        } else {
-            console.error("โครงสร้างข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง", result);
-            Swal.fire("ข้อมูลไม่ตรงระบบ", "เซิร์ฟเวอร์ส่งข้อมูลกลับมาผิดพลาด", "error");
         }
     } catch(e) {
-        console.error("โหลดข้อมูลล้มเหลว:", e);
-        Swal.fire("การเชื่อมต่อขัดข้อง", "ไม่สามารถดึงข้อมูลคลังยาได้เนื่องจากระบบฐานข้อมูลขัดข้อง", "error");
+        console.error("โหลดข้อมูลคลังยาล้มเหลว:", e);
     } finally {
-        // บังคับปิดไอคอนโหลดหมุนๆ ทุกกรณี ไม่ว่าจะโหลดสำเร็จหรือเกิดการ Error
-        if (Swal.isVisible()) {
-            Swal.close();
-        }
+        if (Swal.isVisible()) Swal.close(); // บังคับปิดกล่องโหลดทุกกรณีเพื่อป้องกันแอปค้าง
     }
 }
-
 
 function navigate(menu) {
     document.querySelectorAll(".content-section").forEach(s => s.classList.add("hidden"));
     document.querySelectorAll(".nav-item").forEach(i => {
-        i.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-[#D4EDF4]/30";
+        i.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 text-slate-600 hover:bg-emerald-50 text-xs sm:text-sm transition-colors cursor-pointer";
     });
 
     const targetSection = document.getElementById(`section-${menu}`);
     if (targetSection) targetSection.classList.remove("hidden");
     
-    const event = window.event;
-    if(event && event.currentTarget) {
-        event.currentTarget.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-[#D4EDF4] text-[#2C5282] shadow-xs";
-    } else {
-        // Fallback หาปุ่มกรณีเรียกผ่านฟังก์ชันตรงๆ
-        const items = document.querySelectorAll(".nav-item");
-        items.forEach(btn => {
-            if(btn.getAttribute("onclick").includes(menu)) {
-                btn.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-[#D4EDF4] text-[#2C5282] shadow-xs";
-            }
-        });
+    if (window.event && window.event.currentTarget) {
+        window.event.currentTarget.className = "nav-item w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center gap-3 bg-emerald-600 text-white shadow-lg text-xs sm:text-sm cursor-pointer";
     }
     
     if(menu === 'dashboard') renderDashboard();
@@ -185,9 +169,9 @@ function renderDashboard() {
         const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
         
         let colorClass = "";
-        if (diffMonths <= 3) colorClass = "bg-[#F6C2C2]/50 border-l-4 border-[#F6C2C2] text-[#632525] font-medium"; 
-        else if (diffMonths <= 6) colorClass = "bg-[#F9FBBA]/60 border-l-4 border-[#E2E67A] text-[#52541C]"; 
-        else colorClass = "bg-[#D4EDF4]/30 border-l-4 border-[#B0E2F0] text-[#1F3E47]"; 
+        if (diffMonths <= 3) colorClass = "bg-rose-50 border-l-4 border-rose-500 text-rose-900 font-medium"; 
+        else if (diffMonths <= 6) colorClass = "bg-amber-50 border-l-4 border-amber-500 text-amber-900"; 
+        else colorClass = "bg-emerald-50 border-l-4 border-emerald-500 text-emerald-900"; 
 
         const tr = document.createElement("tr");
         tr.className = colorClass;
@@ -224,7 +208,6 @@ function searchMedicines() {
     }
 }
 
-// ปรับปรุงการคำนวณและแสดงผลการ์ดยา หน้าตรวจสอบยา
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
     if (!container) return;
@@ -238,77 +221,33 @@ function renderInspectList() {
         return matchesType && matchesSearch;
     });
 
-    const today = new Date();
-
     filteredMaster.forEach(drug => {
         const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
         
-        // 1. รวมยอดจำนวนยาจริงที่มีในคลัง (จากทุกล็อตรวมกัน)
-        const currentTotalQty = drugLots.reduce((sum, currentLot) => sum + Number(currentLot.qty || 0), 0);
-        const maxStockTarget = Number(drug.stock || 0);
-
-        // 2. ตรวจสอบสถานะวันหมดอายุของล็อตที่วิกฤตที่สุดในยานี้
-        let highestExpRisk = 0; // 0=ปกติ, 3=เสี่ยงต่ำ (6-9 ด.), 2=เสี่ยงกลาง (3-6 ด.), 1=เสี่ยงวิกฤต (0-3 ด.)
-        
-        drugLots.forEach(lot => {
-            if(!lot.expDate) return;
-            const exp = new Date(lot.expDate);
-            const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
-            
-            if(diffMonths <= 3 && diffMonths >= -12) {
-                if(highestExpRisk < 1) highestExpRisk = 1; 
-            } else if (diffMonths <= 6 && diffMonths > 3) {
-                if(highestExpRisk === 0 || highestExpRisk > 2) highestExpRisk = 2;
-            } else if (diffMonths <= 9 && diffMonths > 6) {
-                if(highestExpRisk === 0) highestExpRisk = 3;
-            }
-        });
-
-        // 3. ป้ายสถานะการตรวจเช็ค (Inspected Status Badge)
         const totalLotsCount = drugLots.length;
         const inspectedLotsCount = drugLots.filter(l => l.isInspected === true).length;
         
-        let checkStatusBadge = "";
+        let statusBadge = "";
         if (totalLotsCount === 0) {
-            checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-400 rounded-md font-medium">ไม่มี Lot ในระบบ</span>`;
+            statusBadge = `<span class="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-400 rounded-md font-medium">ไม่มีล็อตในคลัง</span>`;
         } else if (inspectedLotsCount === totalLotsCount) {
-            checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#E2F2D5] text-[#4A6B32] rounded-md font-bold">✓ ตรวจครบแล้ว</span>`;
+            statusBadge = `<span class="text-[10px] px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold">✓ ตรวจครบแล้ว</span>`;
         } else {
-            checkStatusBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#F9FBBA] text-[#61631F] rounded-md font-bold">⚠️ ค้างตรวจ ${totalLotsCount - inspectedLotsCount}</span>`;
-        }
-
-        // 4. เงื่อนไข: ตรวจสอบถ้ายาจริงน้อยกว่าเกณฑ์ Max Stock ให้ขึ้นแถบสถานะสีส้มพาสเทลเตือนภัย
-        let stockAlertBadge = "";
-        if(currentTotalQty < maxStockTarget) {
-            stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-[#FFE3CD] text-[#A0522D] rounded-md font-bold block mt-1 text-center">⚠️ ต่ำกว่า Stock (${currentTotalQty}/${maxStockTarget})</span>`;
-        } else {
-            stockAlertBadge = `<span class="text-[11px] px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md block mt-1 text-center">ปกติ (${currentTotalQty}/${maxStockTarget})</span>`;
-        }
-
-        // 5. ป้ายแจ้งเตือนล็อตยาหมดอายุ
-        let expAlertBadge = "";
-        if(highestExpRisk === 1) {
-            expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#F6C2C2] text-[#7A2E2E] rounded-md font-black block mt-1 text-center animate-pulse">🚨 มี Lot หมดอายุภายใน 3 ด.</span>`;
-        } else if (highestExpRisk === 2) {
-            expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#F9FBBA] text-[#52541C] rounded-md font-bold block mt-1 text-center">⏰ มี Lot หมดอายุภายใน 6 ด.</span>`;
-        } else if (highestExpRisk === 3) {
-            expAlertBadge = `<span class="text-[10px] px-2 py-0.5 bg-[#D4EDF4] text-[#1F3E47] rounded-md font-semibold block mt-1 text-center">ℹ️ มี Lot หมดอายุภายใน 9 ด.</span>`;
+            statusBadge = `<span class="text-[10px] px-2 py-0.5 bg-amber-100 text-amber-700 rounded-md font-bold">⚠️ ค้างตรวจ ${totalLotsCount - inspectedLotsCount} ล็อต</span>`;
         }
 
         const div = document.createElement("div");
-        div.className = "p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-[#D4EDF4] hover:shadow-md transition-all flex justify-between items-start cursor-pointer";
+        div.className = "p-4 bg-white rounded-2xl border border-slate-100 shadow-xs hover:border-emerald-500 hover:shadow-md transition-all flex justify-between items-center cursor-pointer";
         div.onclick = () => openModal(drug.barcodeId);
         div.innerHTML = `
-            <div class="space-y-1 flex-1 pr-2">
+            <div class="space-y-1">
                 <span class="text-[9px] uppercase px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">${drug.type}</span>
-                <h4 class="font-bold text-slate-700 text-sm mt-1.5 line-clamp-2">${drug.drugName}</h4>
-                <p class="text-xs text-slate-400 font-mono mt-0.5">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit}</p>
-                <p class="text-[11px] text-slate-500">จุดจัดเก็บหลัก: ${drug.storage}</p>
+                <h4 class="font-bold text-slate-700 text-sm mt-1">${drug.drugName}</h4>
+                <p class="text-xs text-slate-400 font-mono">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit}</p>
+                <p class="text-xs text-slate-500">ที่เก็บ: ${drug.storage} | เกณฑ์เบิก: ${drug.stock}</p>
             </div>
-            <div class="text-right shrink-0 w-36">
-                ${checkStatusBadge}
-                ${stockAlertBadge}
-                ${expAlertBadge}
+            <div class="text-right shrink-0">
+                ${statusBadge}
             </div>
         `;
         container.appendChild(div);
@@ -340,7 +279,7 @@ function openModal(barcodeId) {
     if (!drug) return;
     
     document.getElementById("modal-drug-name").innerText = drug.drugName;
-    document.getElementById("modal-barcode-id").innerText = "รหัสบาร์โค้ด: " + drug.barcodeId + " | Target Stock (Max): " + (drug.stock || 0);
+    document.getElementById("modal-barcode-id").innerText = "บาร์โค้ด: " + drug.barcodeId + " | หน่วย: " + drug.unit;
     
     renderModalLots();
     document.getElementById("lot-modal").classList.remove("hidden");
@@ -364,22 +303,22 @@ function renderModalLots() {
     const drugLots = APP_STATE.lots.filter(l => l.barcodeId && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString());
 
     if(drugLots.length === 0) {
-        container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-3">ไม่พบประวัติล็อตย่อยในขณะนี้</p>`;
+        container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">ไม่มีประวัติล็อตย่อยในขณะนี้</p>`;
         return;
     }
 
     drugLots.forEach(lot => {
         const div = document.createElement("div");
-        div.className = `p-3 rounded-xl border text-xs flex justify-between items-center ${lot.isInspected ? 'bg-[#E2F2D5]/50 border-[#E2F2D5]':'bg-slate-50/50 border-slate-200'}`;
+        div.className = `p-3 rounded-xl border text-xs flex justify-between items-center ${lot.isInspected ? 'bg-emerald-50/50 border-emerald-200':'bg-slate-50 border-slate-200'}`;
         div.innerHTML = `
             <div>
-                <p class="font-bold text-slate-700">Lot: ${lot.lotNumber || 'ไม่ระบุ'} | <span class="text-[#A84E4E] font-bold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
-                <p class="text-slate-400 mt-0.5 font-medium">จำนวน: ${lot.qty || 0} | ที่เก็บ: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
-                ${lot.isInspected ? `<p class="text-[10px] text-[#4A6B32] font-bold mt-0.5">✓ ตรวจแล้วโดย ${lot.inspector || 'เจ้าหน้าที่'}</p>` : ''}
+                <p class="font-bold text-slate-700">Lot: ${lot.lotNumber} | <span class="text-rose-600 font-bold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
+                <p class="text-slate-400 mt-0.5">จำนวน: ${lot.qty} | ที่เก็บ: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
+                ${lot.isInspected ? `<p class="text-[10px] text-emerald-600 font-bold mt-0.5">✓ ตรวจแล้วโดย ${lot.inspector}</p>` : ''}
             </div>
             <div class="flex gap-1 shrink-0">
-                <button onclick="inspectSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-[#2C5282] border border-[#D4EDF4] hover:bg-[#D4EDF4]/30 rounded-lg font-bold transition-colors cursor-pointer">ตรวจล็อตนี้</button>
-                <button onclick="deleteSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-[#7A2E2E] border border-[#F6C2C2] hover:bg-[#F6C2C2]/40 rounded-lg font-bold transition-colors cursor-pointer">ลบ</button>
+                <button onclick="inspectSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-emerald-600 border border-emerald-200 hover:bg-emerald-50 rounded-lg text-[11px] font-bold transition-colors cursor-pointer">ตรวจล็อตนี้</button>
+                <button onclick="deleteSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg text-[11px] font-bold transition-colors cursor-pointer">ลบ</button>
             </div>
         `;
         container.appendChild(div);
@@ -395,7 +334,7 @@ async function submitLotForm() {
 
     if(!num || !exp || !qty) return Swal.fire("ข้อมูลไม่ครบ", "โปรดระบุ เลขล็อต, วันหมดอายุ และจำนวนยา", "warning");
 
-    showLoading("กำลังประมวลผลล็อดยา...");
+    showLoading("กำลังส่งบันทึก...");
 
     const lotData = {
         barcodeId: APP_STATE.selectedBarcode, lotNumber: num, expDate: exp, qty: Number(qty),
@@ -412,16 +351,16 @@ async function submitLotForm() {
         if(result.success) {
             await reloadDataFromServer();
             renderModalLots();
-            Swal.fire("สำเร็จ", "บันทึกข้อมูลล็อตเรียบร้อย", "success");
+            Swal.fire("สำเร็จ", "บันทึกข้อมูลล็อตย่อยเรียบร้อย", "success");
             document.getElementById("lot-number").value = "";
             document.getElementById("lot-exp").value = "";
             document.getElementById("lot-qty").value = "";
         }
-    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถส่งข้อมูลได้", "error"); }
+    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถบันทึกได้", "error"); }
 }
 
 async function inspectSpecificLot(lotNumber) {
-    showLoading("กำลังยืนยันสถานะล็อต...");
+    showLoading("กำลังยืนยันล็อต...");
     const currentLot = APP_STATE.lots.find(l => l.barcodeId && APP_STATE.selectedBarcode && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString() && l.lotNumber.toString() === lotNumber.toString());
     if(!currentLot) return;
 
@@ -437,22 +376,22 @@ async function inspectSpecificLot(lotNumber) {
         });
         await reloadDataFromServer();
         renderModalLots();
-        Swal.fire("ตรวจแล้ว", `ยืนยันความถูกต้องเรียบร้อย`, "success");
+        Swal.fire("สำเร็จ", `ตรวจเช็คล็อต ${lotNumber} เรียบร้อย`, "success");
     } catch(e) { Swal.fire("ล้มเหลว", "เกิดข้อผิดพลาดในการตรวจสอบ", "error"); }
 }
 
 function deleteSpecificLot(lotNumber) {
     Swal.fire({
-        title: 'ยืนยันการลบตัวเลือก?',
+        title: 'ยืนยันการลบ?',
         text: `คุณต้องการลบล็อดยาหมายเลข ${lotNumber} หรือไม่`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#F6C2C2',
-        confirmButtonText: 'ลบข้อมูล',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'ลบ',
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
         if (result.isConfirmed) {
-            showLoading("กำลังทำลายข้อมูลล็อต...");
+            showLoading("กำลังลบ...");
             try {
                 await fetch(API_URL, { 
                     method: "POST", 
@@ -461,14 +400,14 @@ function deleteSpecificLot(lotNumber) {
                 });
                 await reloadDataFromServer();
                 renderModalLots();
-                Swal.fire("ลบสำเร็จ", "ลบข้อมูลล็อดยาเรียบร้อยแล้ว", "success");
-            } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถสั่งลบข้อมูลได้", "error"); }
+                Swal.fire("สำเร็จ", "ลบล็อดยาเรียบร้อยแล้ว", "success");
+            } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถลบได้", "error"); }
         }
     });
 }
 
 async function submitFinalVerify() {
-    showLoading("กำลังส่งบันทึกความสมบูรณ์...");
+    showLoading("กำลังบันทึกคำยืนยัน...");
     try {
         await fetch(API_URL, { 
             method: "POST", 
@@ -478,8 +417,8 @@ async function submitFinalVerify() {
         await reloadDataFromServer();
         closeModal();
         renderInspectList();
-        Swal.fire("สำเร็จ", "ยืนยันผลการตรวจสอบยาทุกล็อตเรียบร้อย", "success");
-    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถส่งคำยืนยันการตรวจได้", "error"); }
+        Swal.fire("สำเร็จ", "ยืนยันผลการตรวจเช็คยาทุกล็อตเรียบร้อย", "success");
+    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถส่งคำยืนยันได้", "error"); }
 }
 
 function renderAdminList() {
@@ -495,13 +434,13 @@ function renderAdminList() {
     
     filtered.forEach(drug => {
         const div = document.createElement("div");
-        div.className = "p-3 flex justify-between items-center text-xs border-b border-slate-50";
+        div.className = "p-3 flex justify-between items-center text-xs border-b border-slate-100";
         div.innerHTML = `
             <div>
                 <p class="font-bold text-slate-700">${drug.drugName}</p>
-                <p class="text-slate-400">Barcode: ${drug.barcodeId} | กลุ่ม: ${drug.type || 'ทั่วไป'}</p>
+                <p class="text-slate-400">Barcode: ${drug.barcodeId} | ประเภท: ${drug.type || 'ทั่วไป'}</p>
             </div>
-            <button onclick="deleteDrugMaster('${drug.barcodeId}')" class="px-2 py-1 bg-[#F6C2C2]/40 hover:bg-[#F6C2C2] text-[#7A2E2E] rounded-lg transition-colors font-bold cursor-pointer">ลบรายการหลัก</button>
+            <button onclick="deleteDrugMaster('${drug.barcodeId}')" class="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg font-bold hover:bg-rose-100 transition-colors cursor-pointer">ลบ</button>
         `;
         container.appendChild(div);
     });
@@ -515,9 +454,9 @@ async function submitNewDrug() {
     const storage = document.getElementById("add-storage").value.trim();
     const type = document.getElementById("add-type").value;
 
-    if(!id || !name || !unit || !type) return Swal.fire("ข้อมูลไม่ครบ", "กรุณาระบุข้อมูลจำเป็นของตัวยาให้ครบถ้วน", "warning");
+    if(!id || !name || !unit || !type) return Swal.fire("ข้อมูลไม่ครบ", "กรุณาระบุข้อมูลจำเป็นของยาหลักให้ครบถ้วน", "warning");
 
-    showLoading("กำลังประมวลผลรหัสคลังยา...");
+    showLoading("กำลังเพิ่มรายการยา...");
     
     const drug = { barcodeId: id, drugName: name, unit: unit, stock: Number(stock || 0), storage: storage, type: type };
 
@@ -531,27 +470,27 @@ async function submitNewDrug() {
         if(result.success) {
             await reloadDataFromServer();
             renderAdminList();
-            Swal.fire("บันทึกแล้ว", "เพิ่มยาตัวใหม่สำเร็จ", "success");
+            Swal.fire("สำเร็จ", "เพิ่มยาตัวใหม่เข้าระบบสำเร็จ", "success");
             document.getElementById("add-barcode").value = "";
             document.getElementById("add-name").value = "";
         } else {
             Swal.fire("ไม่สามารถบันทึกได้", result.message, "error");
         }
-    } catch(e) { Swal.fire("ล้มเหลว", "เกิดปัญหาขัดข้องฝั่งเซิร์ฟเวอร์", "error"); }
+    } catch(e) { Swal.fire("ล้มเหลว", "เกิดข้อผิดพลาดในการบันทึก", "error"); }
 }
 
 function deleteDrugMaster(barcodeId) {
     Swal.fire({
         title: 'ลบรายการยาถาวร?',
-        text: "การลบจะลบข้อมูลทั้งรายการหลักและล็อดย่อยทั้งหมดที่ผูกกับรหัสนี้!",
+        text: "ข้อมูลทุกล็อตรวมถึงข้อมูลยาหลักจะหายไปทั้งหมด!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#F6C2C2',
-        confirmButtonText: 'ยืนยันลบทั้งหมด',
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'ยืนยันลบ',
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
         if(result.isConfirmed) {
-            showLoading("กำลังทำลายข้อมูลถาวร...");
+            showLoading("กำลังลบข้อมูลยาหลัก...");
             try {
                 await fetch(API_URL, { 
                     method: "POST", 
@@ -560,7 +499,7 @@ function deleteDrugMaster(barcodeId) {
                 });
                 await reloadDataFromServer();
                 renderAdminList();
-                Swal.fire("ลบสำเร็จ", "ลบข้อมูลยาออกจากโครงสร้างคลังหลักสำเร็จ", "success");
+                Swal.fire("สำเร็จ", "ลบข้อมูลยาหลักเรียบร้อยแล้ว", "success");
             } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถลบข้อมูลได้", "error"); }
         }
     });
@@ -570,7 +509,7 @@ function generateReport(reportType) {
     const startStr = document.getElementById("report-start").value;
     const endStr = document.getElementById("report-end").value;
     
-    if(!startStr || !endStr) return Swal.fire("ระบุเวลา", "โปรดเลือกช่วงวันที่ก่อนดึงรายงาน", "warning");
+    if(!startStr || !endStr) return Swal.fire("ระบุช่วงเวลา", "โปรดเลือกช่วงวันที่ก่อนดึงรายงาน", "warning");
 
     const start = new Date(startStr);
     const end = new Date(endStr);
@@ -583,23 +522,22 @@ function generateReport(reportType) {
 
     let headerHTML = `
         <div class="print-header text-center mb-4">
-            <h1 class="text-base font-bold text-slate-700">${reportType === 'all' ? '6.1 รายงานข้อมูลยารวมและสรุปทุกล็อตคลังยา CATH LAB':'6.2 รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน'}</h1>
-            <p class="text-xs text-slate-400 mt-0.5">ช่วงเวลาประเมินผล: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
-            <p class="text-[11px] text-slate-400">ผู้พิมพ์รายงาน: ${APP_STATE.user || '-'} | วันและเวลาพิมพ์: ${new Date().toLocaleString('th-TH')}</p>
+            <h1 class="text-base font-bold text-slate-700">${reportType === 'all' ? 'รายงานสรุปรายการคงคลังทุกล็อต CATH LAB':'รายงานความครบถ้วนการตรวจสอบยาประจำเดือน'}</h1>
+            <p class="text-xs text-slate-400 mt-0.5">ช่วงเวลา: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
         </div>
-        <button onclick="printReport('report-preview-container')" class="no-print mb-4 px-4 py-2 bg-[#D4EDF4] text-[#2C5282] border border-[#D4EDF4] rounded-xl text-xs font-bold cursor-pointer">🖨️ สั่งพิมพ์เอกสารนี้</button>
+        <button onclick="printReport('report-preview-container')" class="no-print mb-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer">🖨️ พิมพ์รายงาน</button>
     `;
 
     let tableHTML = "";
 
     if(reportType === 'all') {
         tableHTML = `
-            <table class="w-full text-xs text-left border-collapse border border-slate-100">
+            <table class="w-full text-xs text-left border-collapse border border-slate-200">
                 <thead class="bg-slate-50 font-bold text-slate-500">
                     <tr>
-                        <th class="p-2 border border-slate-100">บาร์โค้ด</th><th class="p-2 border border-slate-100">ชื่อสินค้า/ตัวยา</th>
-                        <th class="p-2 border border-slate-100">Lot</th><th class="p-2 border border-slate-100">วันหมดอายุ</th>
-                        <th class="p-2 border border-slate-100 text-center">จำนวนคลัง</th><th class="p-2 border border-slate-100">หน่วย</th><th class="p-2 border border-slate-100">สถานที่จัดเก็บ</th>
+                        <th class="p-2 border">บาร์โค้ด</th><th class="p-2 border">ชื่อสินค้า / ยาหลัก</th>
+                        <th class="p-2 border">ล็อต</th><th class="p-2 border">วันหมดอายุ</th>
+                        <th class="p-2 border text-center">จำนวนคงคลัง</th><th class="p-2 border">หน่วย</th><th class="p-2 border">สถานที่จัดเก็บ</th>
                     </tr>
                 </thead><tbody>
         `;
@@ -610,10 +548,10 @@ function generateReport(reportType) {
                 const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
                 tableHTML += `
                     <tr class="text-slate-600">
-                        <td class="p-2 border border-slate-100 font-mono">${lot.barcodeId || ''}</td><td class="p-2 border border-slate-100 font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
-                        <td class="p-2 border border-slate-100">${lot.lotNumber || ''}</td><td class="p-2 border border-slate-100">${exp.toLocaleDateString('th-TH')}</td>
-                        <td class="p-2 border border-slate-100 text-center font-bold">${lot.qty || 0}</td><td class="p-2 border border-slate-100">${med ? med.unit : '-'}</td>
-                        <td class="p-2 border border-slate-100">${lot.storage || '-'}</td>
+                        <td class="p-2 border font-mono">${lot.barcodeId || ''}</td><td class="p-2 border font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
+                        <td class="p-2 border">${lot.lotNumber || ''}</td><td class="p-2 border">${exp.toLocaleDateString('th-TH')}</td>
+                        <td class="p-2 border text-center font-bold">${lot.qty || 0}</td><td class="p-2 border">${med ? med.unit : '-'}</td>
+                        <td class="p-2 border">${lot.storage || '-'}</td>
                     </tr>
                 `;
             }
@@ -621,12 +559,12 @@ function generateReport(reportType) {
         tableHTML += "</tbody></table>";
     } else {
         tableHTML = `
-            <table class="w-full text-xs text-left border-collapse border border-slate-100">
+            <table class="w-full text-xs text-left border-collapse border border-slate-200">
                 <thead class="bg-slate-50 font-bold text-slate-500">
                     <tr>
-                        <th class="p-2 border border-slate-100">ชื่อสินค้า / ยาหลัก</th><th class="p-2 border border-slate-100">ประเภท</th>
-                        <th class="p-2 border border-slate-100">Lot ที่ตรวจ</th><th class="p-2 border border-slate-100 text-center">สถานะ</th>
-                        <th class="p-2 border border-slate-100">ผู้ตรวจสอบ</th><th class="p-2 border border-slate-100">วันที่ตรวจสอบล่าสุด</th>
+                        <th class="p-2 border">ชื่อสินค้า / ยาหลัก</th><th class="p-2 border">ประเภท</th>
+                        <th class="p-2 border">ล็อตที่ตรวจ</th><th class="p-2 border text-center">สถานะ</th>
+                        <th class="p-2 border">ผู้ตรวจสอบ</th><th class="p-2 border">วันที่ตรวจสอบล่าสุด</th>
                     </tr>
                 </thead><tbody>
         `;
@@ -637,11 +575,11 @@ function generateReport(reportType) {
                 const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
                 tableHTML += `
                     <tr class="text-slate-600">
-                        <td class="p-2 border border-slate-100 font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td><td class="p-2 border border-slate-100">${med ? med.type : '-'}</td>
-                        <td class="p-2 border border-slate-100 font-mono">${lot.lotNumber || ''}</td>
-                        <td class="p-2 border border-slate-100 text-center text-teal-600 font-bold">${lot.isInspected ? '✓ ตวยสอบแล้ว':'✕ ค้างตรวจ'}</td>
-                        <td class="p-2 border border-slate-100">${lot.inspector || '-'}</td>
-                        <td class="p-2 border border-slate-100">${insTime.toLocaleDateString('th-TH')}</td>
+                        <td class="p-2 border font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td><td class="p-2 border">${med ? med.type : '-'}</td>
+                        <td class="p-2 border font-mono">${lot.lotNumber || ''}</td>
+                        <td class="p-2 border text-center text-emerald-600 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
+                        <td class="p-2 border">${lot.inspector || '-'}</td>
+                        <td class="p-2 border">${insTime.toLocaleDateString('th-TH')}</td>
                     </tr>
                 `;
             }
@@ -661,11 +599,11 @@ function printReport(containerId) {
 function handleLogout() {
     Swal.fire({
         title: 'ออกจากระบบคลังยา?',
-        text: "คุณต้องการล็อกเอาท์ออกจากระบบหรือไม่",
+        text: "คุณต้องการยกเลิกเซสชันและล็อกเอาท์ออกจากระบบ CATH LAB หรือไม่",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#D4EDF4', 
-        cancelButtonColor: '#F6C2C2',  
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#f43f5e',
         confirmButtonText: 'ยืนยันล็อกเอาท์',
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
