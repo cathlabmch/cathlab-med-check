@@ -148,7 +148,6 @@ function navigate(menu) {
     if(menu === 'admin') renderAdminList();
 }
 
-// 1. หน้าจอ Dashboard: คืนค่าเป็นแบบดั้งเดิม (ไม่มีเส้นตารางบนหน้าจอ แสดงผลแบบการ์ด/ badge สวยงาม)
 function renderDashboard() {
     const tbody = document.getElementById("table-dashboard-body");
     if (!tbody) return;
@@ -203,7 +202,6 @@ function renderDashboard() {
         const tr = document.createElement("tr");
         tr.className = `${colorClass} hover:bg-slate-100/50 transition-colors border-b border-slate-100/60`;
         
-        // แก้ไขโครงสร้างแถว (เสาข้อมูล) ให้ตรงตามโครงสร้างดั้งเดิมของ Dashboard บนหน้าจอของคุณ
         tr.innerHTML = `
             <td class="p-4 font-mono text-xs font-semibold">${item.barcodeId || ''}</td>
             <td class="p-4 font-bold text-xs sm:text-sm text-slate-700">${item.drugName || ''}</td>
@@ -576,7 +574,7 @@ function deleteDrugMaster(barcodeId) {
     });
 }
 
-// 2. หน้าพิมพ์รายงาน (REPORT): แสดงผลพรีวิวแบบสวยงามทันสมัย แต่เวลาสั่งพิมพ์จะกลายเป็นตารางทางการ 100%
+// 2. หน้าพิมพ์รายงาน (REPORT): ปรับให้พรีวิวสวยงาม และดึงข้อมูลยารวม-สถานะตรวจจัดรูปแบบพอดีหน้ากระดาษ A4
 function generateReport(reportType) {
     const startStr = document.getElementById("report-start").value;
     const endStr = document.getElementById("report-end").value;
@@ -597,17 +595,17 @@ function generateReport(reportType) {
         : '6.2 รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน';
 
     let headerHTML = `
-        <div class="print-report-wrapper" style="padding: 20px; background: #fff;">
-            <div class="text-center pb-5 mb-5" style="border-bottom: 2px solid #000000; text-align: center; margin-bottom: 20px; padding-bottom: 10px;">
+        <div class="print-report-wrapper" style="padding: 15px; background: #fff; width: 100%; box-sizing: border-box;">
+            <div class="text-center pb-4 mb-4" style="border-bottom: 2px solid #000000; text-align: center; margin-bottom: 20px; padding-bottom: 10px;">
                 <h1 style="font-size: 20px; margin: 0 0 5px 0; color: #000; font-weight: bold; font-family: 'Sarabun', sans-serif;">${reportTitle}</h1>
                 <p style="font-size: 13px; color: #333; margin: 5px 0 0 0;">ช่วงเวลาประเมินผลคลัง: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #444; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: #000; margin-top: 15px;">
                     <span><strong>ผู้พิมพ์รายงาน:</strong> <span class="print-by">${APP_STATE.user || '-'}</span></span>
                     <span><strong>วันและเวลาพิมพ์:</strong> <span class="print-at">${new Date().toLocaleString('th-TH')} น.</span></span>
                 </div>
             </div>
             <button onclick="printReport()" class="no-print mb-5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm" style="margin-bottom: 15px; padding: 10px 18px; background-color: #2563eb; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                🖨️ สั่งพิมพ์รายงานทางการฉบับนี้
+                🖨️ สั่งพิมพ์รายงานทางการฉบับนี้ (พอดีหน้ากระดาษ A4)
             </button>
     `;
 
@@ -617,16 +615,16 @@ function generateReport(reportType) {
     if(reportType === 'all') {
         tableHTML = `
             <div style="width: 100%; overflow-x: auto;">
-                <table class="official-print-table" border="1" style="width: 100%; border-collapse: collapse; min-width: 700px; font-size: 12px; font-family: 'Sarabun', Arial, sans-serif;">
+                <table class="official-print-table" border="1" style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'Sarabun', Arial, sans-serif; border: 1.5px solid #000000;">
                     <thead>
                         <tr style="background-color: #cbd5e1;">
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">รหัสบาร์โค้ด</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 35%;">ชื่อสินค้า / ตัวยา</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">Lot Number</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">วันหมดอายุ (EXP)</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">จำนวนคงคลัง</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">หน่วย</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000;">สถานที่จัดเก็บ</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 12%;">รหัสบาร์โค้ด</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 30%;">ชื่อสินค้า / ตัวยา</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 12%;">Lot Number</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 13%;">วันหมดอายุ (EXP)</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 10%;">จำนวนคงคลัง</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 8%;">หน่วย</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 15%;">สถานที่จัดเก็บ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -634,23 +632,27 @@ function generateReport(reportType) {
         
         let hasData = false;
 
-        APP_STATE.lots.forEach(lot => {
-            const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
-            const expDate = lot.expDate ? new Date(lot.expDate) : null;
+        APP_STATE.master.forEach(drug => {
+            const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
             
-            if(expDate && expDate >= start && expDate <= end) {
-                hasData = true;
-                tableHTML += `
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-family: monospace;">${lot.barcodeId || ''}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; font-weight: bold;">${med ? med.drugName : 'ไม่ทราบชื่อยา'}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${lot.lotNumber || '-'}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${expDate.toLocaleDateString('th-TH')}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-weight: bold;">${lot.qty || 0}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${med ? med.unit : '-'}</td>
-                        <td style="padding: 8px; border: 1px solid #000000;">${lot.storage || '-'}</td>
-                    </tr>
-                `;
+            if(drugLots.length > 0) {
+                drugLots.forEach(lot => {
+                    const expDate = lot.expDate ? new Date(lot.expDate) : null;
+                    if(expDate && expDate >= start && expDate <= end) {
+                        hasData = true;
+                        tableHTML += `
+                            <tr>
+                                <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-family: monospace;">${drug.barcodeId || ''}</td>
+                                <td style="padding: 8px; border: 1px solid #000000; font-weight: bold;">${drug.drugName || ''}</td>
+                                <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${lot.lotNumber || '-'}</td>
+                                <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${expDate.toLocaleDateString('th-TH')}</td>
+                                <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-weight: bold;">${lot.qty || 0}</td>
+                                <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${drug.unit || '-'}</td>
+                                <td style="padding: 8px; border: 1px solid #000000;">${lot.storage || drug.storage || '-'}</td>
+                            </tr>
+                        `;
+                    }
+                });
             }
         });
         
@@ -659,62 +661,88 @@ function generateReport(reportType) {
         }
         tableHTML += "</tbody></table></div></div>";
 
-    // --- แบบที่ 2: รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน ---
+    // --- แบบที่ 2: รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน (ปรับตามตารางเช็คยาเรียงไปทางขวา) ---
     } else {
         tableHTML = `
             <div style="width: 100%; overflow-x: auto;">
-                <table class="official-print-table" border="1" style="width: 100%; border-collapse: collapse; min-width: 700px; font-size: 12px; font-family: 'Sarabun', Arial, sans-serif;">
+                <table class="official-print-table" border="1" style="width: 100%; border-collapse: collapse; font-size: 12px; font-family: 'Sarabun', Arial, sans-serif; border: 1.5px solid #000000;">
                     <thead>
                         <tr style="background-color: #cbd5e1;">
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">รหัสบาร์โค้ด</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 30%;">ชื่อสินค้า / ยาหลัก</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">Lot ยา</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">สถานะการตรวจ</th>
-                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000;">วันที่เข้าตรวจสอบ</th>
-                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000;">ผู้รับผิดชอบตรวจสอบ</th>
+                            <th style="padding: 8px; text-align: center; font-weight: bold; border: 1px solid #000000; color: #000; width: 12%;">รหัสบาร์โค้ด</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000; width: 25%;">ชื่อสินค้า / ยาหลัก</th>
+                            <th style="padding: 8px; text-align: left; font-weight: bold; border: 1px solid #000000; color: #000;">ประวัติบันทึกการตรวจสอบยาประจำเดือน (เรียงวันที่ไปทางขวา ➡️)</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
 
-        let inspectedList = [];
-        let pendingList = [];
+        let inspectedDrugs = [];
+        let pendingDrugs = [];
 
-        APP_STATE.lots.forEach(lot => {
-            const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
-            const dataObj = { lot, med };
+        APP_STATE.master.forEach(drug => {
+            const drugLots = APP_STATE.lots.filter(l => l.barcodeId && drug.barcodeId && l.barcodeId.toString() === drug.barcodeId.toString());
+            let checkedLots = drugLots.filter(l => l.isInspected === true);
+            
+            // เรียงลำดับจากวันที่ตรวจสอบเก่าไปใหม่
+            checkedLots.sort((a, b) => new Date(a.inspectionTime) - new Date(b.inspectionTime));
 
-            if (lot.isInspected) {
-                inspectedList.push(dataObj);
+            const isAllChecked = drugLots.length > 0 && drugLots.every(l => l.isInspected === true);
+            const drugData = { drug, checkedLots };
+
+            if (isAllChecked) {
+                inspectedDrugs.push(drugData);
             } else {
-                pendingList.push(dataObj);
+                pendingDrugs.push(drugData);
             }
         });
 
-        inspectedList.sort((a, b) => new Date(a.lot.inspectionTime) - new Date(b.lot.inspectionTime));
+        // ดึงยาที่ตรวจครบแล้วมาเรียงตามลำดับวันตรวจสอบของล็อตแรกสุด
+        inspectedDrugs.sort((a, b) => {
+            const timeA = a.checkedLots[0] ? new Date(a.checkedLots[0].inspectionTime) : 0;
+            const timeB = b.checkedLots[0] ? new Date(b.checkedLots[0].inspectionTime) : 0;
+            return timeA - timeB;
+        });
 
-        const finalDataset = [...inspectedList, ...pendingList];
+        const sortedDataset = [...inspectedDrugs, ...pendingDrugs];
 
-        if (finalDataset.length === 0) {
-            tableHTML += `<tr><td colspan="6" style="padding: 20px; text-align: center; color: #555; font-style: italic; border: 1px solid #000000;">ไม่มีรายการข้อมูลยาหลักในฐานข้อมูลขณะนี้</td></tr>`;
+        if (sortedDataset.length === 0) {
+            tableHTML += `<tr><td colspan="3" style="padding: 20px; text-align: center; color: #555; font-style: italic; border: 1px solid #000000;">ไม่มีรายการข้อมูลยาในฐานข้อมูลคลังขณะนี้</td></tr>`;
         } else {
-            finalDataset.forEach(item => {
-                let insDateStr = "-";
-                if(item.lot.inspectionTime) {
-                    const d = new Date(item.lot.inspectionTime);
-                    insDateStr = d.toLocaleDateString('th-TH') + " " + d.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'}) + " น.";
+            sortedDataset.forEach(item => {
+                let trackingCellsHTML = "";
+
+                if (item.checkedLots.length === 0) {
+                    trackingCellsHTML = `<span style="color: #dc2626; font-weight: bold; font-style: italic;">✕ ค้างการตรวจสอบประจำเดือน</span>`;
+                } else {
+                    item.checkedLots.forEach(lot => {
+                        const d = new Date(lot.inspectionTime);
+                        const formattedDate = d.toLocaleDateString('th-TH');
+                        const inspectorName = lot.inspector || 'ไม่ระบุชื่อ';
+                        
+                        trackingCellsHTML += `
+                            <div style="display: inline-block; border: 1px solid #94a3b8; padding: 4px 8px; margin: 2px 5px 2px 0; background-color: #f8fafc; border-radius: 4px; font-size: 11px;">
+                                📅 <strong>Lot:</strong> ${lot.lotNumber} | <strong>เมื่อ:</strong> ${formattedDate} | <strong>ผู้ตรวจ:</strong> ${inspectorName}
+                            </div>
+                        `;
+                    });
+
+                    const hasUncheckedLot = APP_STATE.lots.some(l => l.barcodeId?.toString() === item.drug.barcodeId?.toString() && !l.isInspected);
+                    if (hasUncheckedLot) {
+                        trackingCellsHTML += `
+                            <div style="display: inline-block; border: 1px solid #fca5a5; padding: 4px 8px; margin: 2px 0; background-color: #fef2f2; border-radius: 4px; font-size: 11px; color: #dc2626; font-weight: bold;">
+                                ⚠️ มีบาง Lot ค้างตรวจ
+                            </div>
+                        `;
+                    }
                 }
 
                 tableHTML += `
                     <tr>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-family: monospace;">${item.lot.barcodeId || ''}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; font-weight: bold;">${item.med ? item.med.drugName : 'ไม่ทราบชื่อยา'}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${item.lot.lotNumber || '-'}</td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-weight: bold; color: ${item.lot.isInspected ? '#16a34a' : '#dc2626'};">
-                            ${item.lot.isInspected ? '✓ ตรวจสอบแล้ว' : '✕ ค้างตรวจสอบ'}
+                        <td style="padding: 8px; border: 1px solid #000000; text-align: center; font-family: monospace;">${item.drug.barcodeId || ''}</td>
+                        <td style="padding: 8px; border: 1px solid #000000; font-weight: bold;">${item.drug.drugName || ''}</td>
+                        <td style="padding: 8px; border: 1px solid #000000; vertical-align: middle;">
+                            ${trackingCellsHTML}
                         </td>
-                        <td style="padding: 8px; border: 1px solid #000000; text-align: center;">${insDateStr}</td>
-                        <td style="padding: 8px; border: 1px solid #000000;">${item.lot.inspector || '-'}</td>
                     </tr>
                 `;
             });
@@ -726,11 +754,14 @@ function generateReport(reportType) {
     preview.innerHTML = headerHTML + tableHTML;
 }
 
-// 3. ฟังก์ชันควบคุมการสั่งพิมพ์: ซ่อนสิ่งที่ไม่เกี่ยวข้องทั้งหมดชั่วคราวเพื่อให้ตารางออกมาเป็นทางการและสะอาดที่สุด
+// 3. ฟังก์ชันควบคุมการสั่งพิมพ์: แก้ปัญหาขอบล้น บังคับโครงสร้างตารางและ Dashboard ให้พอดีหน้ากระดาษ A4 เสมอ
 function printReport() {
     document.querySelectorAll(".print-by").forEach(el => el.innerText = APP_STATE.user || '-');
     document.querySelectorAll(".print-at").forEach(el => el.innerText = new Date().toLocaleString('th-TH') + ' น.');
     
+    const oldStyle = document.getElementById("dynamic-print-css");
+    if(oldStyle) oldStyle.remove();
+
     const styleEl = document.createElement("style");
     styleEl.id = "dynamic-print-css";
     styleEl.innerHTML = `
@@ -745,20 +776,33 @@ function printReport() {
                 position: absolute;
                 left: 0;
                 top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
             }
-            .no-print {
-                display: none !important;
-                visibility: hidden !important;
+            .print-report-wrapper {
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             .official-print-table {
-                border: 1.5px solid #000000 !important;
+                width: 100% !important;
+                table-layout: fixed !important;
+                border-collapse: collapse !important;
+                border: 2px solid #000000 !important;
             }
             .official-print-table th, .official-print-table td {
                 border: 1px solid #000000 !important;
                 color: #000000 !important;
+                word-wrap: break-word !important;
+                white-space: normal !important;
+                padding: 6px !important;
+            }
+            .no-print {
+                display: none !important;
+                visibility: hidden !important;
             }
         }
     `;
@@ -769,7 +813,7 @@ function printReport() {
     setTimeout(() => {
         const targetStyle = document.getElementById("dynamic-print-css");
         if(targetStyle) targetStyle.remove();
-    }, 1000);
+    }, 1200);
 }
 
 function handleLogout() {
