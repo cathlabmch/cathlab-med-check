@@ -102,45 +102,19 @@ async function reloadDataFromServer() {
             body: JSON.stringify({ action: "fetchAllData" })
         });
         const result = await res.json();
+        
         if(result.success) {
-            // ป้องกันข้อมูลคลาดเคลื่อนโดยการแมปตาม Index คอลัมน์ที่แท้จริง (A=0, B=1, C=2, D=3, E=4, F=5)
-            APP_STATE.master = (result.master || []).map(row => {
-                if (Array.isArray(row)) {
-                    return {
-                        barcodeId: row[0] ? row[0].toString().trim() : "",
-                        drugName: row[1] ? row[1].toString().trim() : "ไม่มีชื่อยา",
-                        unit: row[2] ? row[2].toString().trim() : "-",
-                        stock: row[3] ? Number(row[3]) : 0,
-                        storage: row[4] ? row[4].toString().trim() : "-",
-                        type: row[5] ? row[5].toString().trim() : "ทั่วไป"
-                    };
-                }
-                return row; 
-            });
+            // รับค่า Object ตรงๆ จากเซิร์ฟเวอร์โดยไม่ต้องแปลง Index ซ้ำซ้อน
+            APP_STATE.master = result.master || [];
+            APP_STATE.lots = result.lots || [];
 
-            // แมปข้อมูล Lot ตามโครงสร้างชีตย่อยด้วยเช่นกัน
-            APP_STATE.lots = (result.lots || []).map(row => {
-                if (Array.isArray(row)) {
-                    return {
-                        barcodeId: row[0] ? row[0].toString().trim() : "",
-                        lotNumber: row[1] ? row[1].toString().trim() : "-",
-                        expDate: row[2] ? row[2] : "",
-                        qty: row[3] ? Number(row[3]) : 0,
-                        storage: row[4] ? row[4].toString().trim() : "-",
-                        note: row[5] ? row[5].toString().trim() : "-",
-                        isInspected: row[6] === true || row[6] === "TRUE" || row[6] === "checked",
-                        inspector: row[7] ? row[7].toString().trim() : "",
-                        inspectionTime: row[8] ? row[8] : ""
-                    };
-                }
-                return row;
-            });
-
+            // ทำการอัปเดตรีเฟรชหน้าจอแสดงผลใหม่ทั้งหมด
             renderDashboard();
             renderInspectList();
         }
     } catch(e) {
-        console.error("โหลดข้อมูลคลังยาล้มเหลว", e);
+        console.error("โหลดข้อมูลคลังยาล้มเหลว:", e);
+        Swal.fire("ดึงข้อมูลล้มเหลว", "ไม่สามารถเชื่อมต่อกับฐานข้อมูลคลังยาได้", "error");
     }
 }
 
