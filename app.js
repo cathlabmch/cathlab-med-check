@@ -75,17 +75,20 @@ async function handleLogin() {
             navigate('dashboard');
             Swal.close();
         } else {
+            // ส่วนที่ปรับปรุง: แจ้งเตือนสั้นๆ สวยงาม และปลอดภัย ไม่แสดงข้อมูลรายชื่อรหัสเดิม
             Swal.fire({
-                title: "ไม่พบผู้ใช้งาน",
-                html: result.message ? result.message.replace(/\n/g, "<br>") : "รหัสพนักงานไม่ถูกต้อง",
-                icon: "error"
+                title: "ไม่สามารถเข้าสู่ระบบได้",
+                text: "รหัสพนักงานไม่ถูกต้อง หรือไม่พบในระบบปฏิบัติการ CATH LAB โปรดลองใหม่อีกครั้ง หรือติดต่อผู้ดูแลระบบ",
+                icon: "error",
+                confirmButtonColor: "#F6C2C2", // สีชมพูแดงพาสเทลตามธีม Pantone ใหม่ของคุณ
+                confirmButtonText: "ตกลง"
             });
             inputEmp.value = ""; 
             inputEmp.focus();
         }
     } catch (err) {
         console.error("Login Error:", err);
-        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดกับเซิร์ฟเวอร์", "error");
+        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์", "error");
         inputEmp.value = "";
         inputEmp.focus();
     }
