@@ -148,6 +148,9 @@ function navigate(menu) {
     if(menu === 'admin') renderAdminList();
 }
 
+// =================================================================
+// 1. ตารางหน้า DASHBOARD (แสดงผล และ บังคับเส้นตารางเมื่อพิมพ์รายงาน)
+// =================================================================
 function renderDashboard() {
     const tbody = document.getElementById("table-dashboard-body");
     if (!tbody) return;
@@ -174,6 +177,14 @@ function renderDashboard() {
 
     filtered.sort((a, b) => new Date(a.expDate) - new Date(b.expDate));
 
+    // กำหนดแอตทริบิวต์ตารางแม่ให้แสดงเส้นขอบชัดเจนเมื่อสั่งพิมพ์
+    const tableEl = tbody.closest("table");
+    if (tableEl) {
+        tableEl.setAttribute("border", "1");
+        tableEl.style.borderCollapse = "collapse";
+        tableEl.style.borderColor = "#94a3b8";
+    }
+
     filtered.forEach(item => {
         const exp = new Date(item.expDate);
         const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
@@ -194,20 +205,21 @@ function renderDashboard() {
 
         const tr = document.createElement("tr");
         tr.className = `${colorClass} hover:bg-slate-100/50 transition-colors border-b border-slate-100/60`;
+        tr.style.border = "1px solid #cbd5e1";
         
         tr.innerHTML = `
-            <td class="p-4 font-mono text-xs font-semibold">${item.barcodeId || ''}</td>
-            <td class="p-4 font-bold text-xs sm:text-sm text-slate-700">${item.drugName || ''}</td>
-            <td class="p-4 text-xs font-medium">${item.lotNumber || ''}</td>
-            <td class="p-4 text-xs font-medium">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
-            <td class="p-4 text-center">
+            <td class="p-4 font-mono text-xs font-semibold" style="border: 1px solid #cbd5e1; padding: 10px;">${item.barcodeId || ''}</td>
+            <td class="p-4 font-bold text-xs sm:text-sm text-slate-700" style="border: 1px solid #cbd5e1; padding: 10px;">${item.drugName || ''}</td>
+            <td class="p-4 text-xs font-medium" style="border: 1px solid #cbd5e1; padding: 10px;">${item.lotNumber || ''}</td>
+            <td class="p-4 text-xs font-medium" style="border: 1px solid #cbd5e1; padding: 10px;">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
+            <td class="p-4 text-center" style="border: 1px solid #cbd5e1; padding: 10px;">
                 ${monthBadge}
-                <span class="hidden print-visible font-bold text-[11px]">เหลือ ${diffMonths} เดือน</span>
+                <span class="hidden print-visible font-bold text-[11px]" style="display: none;">เหลือ ${diffMonths} เดือน</span>
             </td>
-            <td class="p-4 text-center font-black text-sm text-slate-800">${item.qty || 0}</td>
-            <td class="p-4 text-xs font-medium text-slate-500">${item.unit || ''}</td>
-            <td class="p-4 text-xs font-medium text-slate-600">${item.storage || '-'}</td>
-            <td class="p-4 text-xs italic text-slate-400 font-medium">${item.note || '-'}</td>
+            <td class="p-4 text-center font-black text-sm text-slate-800" style="border: 1px solid #cbd5e1; padding: 10px;">${item.qty || 0}</td>
+            <td class="p-4 text-xs font-medium text-slate-500" style="border: 1px solid #cbd5e1; padding: 10px;">${item.unit || ''}</td>
+            <td class="p-4 text-xs font-medium text-slate-600" style="border: 1px solid #cbd5e1; padding: 10px;">${item.storage || '-'}</td>
+            <td class="p-4 text-xs italic text-slate-400 font-medium" style="border: 1px solid #cbd5e1; padding: 10px;">${item.note || '-'}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -568,7 +580,9 @@ function deleteDrugMaster(barcodeId) {
     });
 }
 
-// ปรับปรุงฟังก์ชันการแสดงผลหน้าพิมพ์รายงาน (6.1 และ 6.2) ให้เป็นตารางดีไซน์สวยงามเสมอกัน
+// =================================================================
+// 2. หน้าพิมพ์รายงาน (REPORT) - บังคับขอบเส้นตารางให้แสดงออกกระดาษ 100%
+// =================================================================
 function generateReport(reportType) {
     const startStr = document.getElementById("report-start").value;
     const endStr = document.getElementById("report-end").value;
@@ -589,15 +603,15 @@ function generateReport(reportType) {
         : '6.2 รายงานสถานะความครบถ้วนของการตรวจเช็คยาประจำเดือน';
 
     let headerHTML = `
-        <div class="print-header text-center pb-5 border-b border-slate-200 mb-5">
-            <h1 class="text-xl font-black text-slate-800 tracking-tight">${reportTitle}</h1>
-            <p class="text-sm font-semibold text-slate-500 mt-1">ช่วงเวลาประเมินผลคลัง: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
-            <div class="flex justify-between text-xs text-slate-400 mt-4 font-medium px-1">
-                <span>ผู้พิมพ์รายงาน: <span class="print-by font-bold text-slate-600">${APP_STATE.user || '-'}</span></span>
-                <span>วันและเวลาพิมพ์: <span class="print-at font-bold text-slate-600">${new Date().toLocaleString('th-TH')} น.</span></span>
+        <div class="print-header text-center pb-5 border-b border-slate-200 mb-5" style="border-bottom: 2px solid #cbd5e1; margin-bottom: 20px; padding-bottom: 15px;">
+            <h1 class="text-xl font-black text-slate-800 tracking-tight" style="font-size: 20px; margin: 0; color: #1e293b;">${reportTitle}</h1>
+            <p class="text-sm font-semibold text-slate-500 mt-1" style="font-size: 13px; color: #64748b; margin-top: 5px;">ช่วงเวลาประเมินผลคลัง: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
+            <div class="flex justify-between text-xs text-slate-400 mt-4 font-medium px-1" style="display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 15px;">
+                <span>ผู้พิมพ์รายงาน: <span class="print-by font-bold text-slate-600" style="font-weight: bold; color: #334155;">${APP_STATE.user || '-'}</span></span>
+                <span>วันและเวลาพิมพ์: <span class="print-at font-bold text-slate-600" style="font-weight: bold; color: #334155;">${new Date().toLocaleString('th-TH')} น.</span></span>
             </div>
         </div>
-        <button onclick="printReport('report-preview-container')" class="no-print mb-5 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm">
+        <button onclick="printReport('report-preview-container')" class="no-print mb-5 px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors shadow-sm" style="margin-bottom: 15px; padding: 8px 16px; background-color: #334155; color: #ffffff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
             🖨️ สั่งพิมพ์รายงานฉบับนี้
         </button>
     `;
@@ -606,20 +620,20 @@ function generateReport(reportType) {
 
     if(reportType === 'all') {
         tableHTML = `
-            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
-                <table class="w-full text-sm text-left border-collapse min-w-[700px]">
-                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-bold">
-                        <tr>
-                            <th class="p-3 border-b border-slate-200 font-semibold">รหัสบาร์โค้ด</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold" style="width: 30%;">ชื่อสินค้า / ตัวยา</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">Lot</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">วันหมดอายุ</th>
-                            <th class="p-3 border-b border-slate-200 text-center font-semibold">จำนวนคลัง</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">หน่วย</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">สถานที่จัดเก็บ</th>
+            <div class="overflow-x-auto" style="width: 100%; overflow-x: auto;">
+                <table border="1" style="width: 100%; border-collapse: collapse; min-width: 700px; font-size: 12px; font-family: sans-serif; border: 2px solid #475569;">
+                    <thead>
+                        <tr style="background-color: #f1f5f9;">
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">รหัสบาร์โค้ด</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0; width: 30%;">ชื่อสินค้า / ตัวยา</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">Lot</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">วันหมดอายุ</th>
+                            <th style="padding: 10px; text-align: center; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">จำนวนคลัง</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">หน่วย</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">สถานที่จัดเก็บ</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                    <tbody style="color: #334155;">
         `;
         
         let hasData = false;
@@ -630,38 +644,38 @@ function generateReport(reportType) {
                 hasData = true;
                 const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
                 tableHTML += `
-                    <tr class="hover:bg-slate-50/60 transition-colors">
-                        <td class="p-3 font-mono text-slate-500 font-semibold">${lot.barcodeId || ''}</td>
-                        <td class="p-3 font-bold text-slate-800">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
-                        <td class="p-3 text-slate-600">${lot.lotNumber || ''}</td>
-                        <td class="p-3 text-slate-600">${exp.toLocaleDateString('th-TH')}</td>
-                        <td class="p-3 text-center font-black text-sm text-slate-800">${lot.qty || 0}</td>
-                        <td class="p-3 text-slate-500">${med ? med.unit : '-'}</td>
-                        <td class="p-3 text-slate-600">${lot.storage || '-'}</td>
+                    <tr style="border-bottom: 1px solid #475569;">
+                        <td style="padding: 10px; border: 1px solid #475569; font-family: monospace;">${lot.barcodeId || ''}</td>
+                        <td style="padding: 10px; border: 1px solid #475569; font-weight: bold; color: #0f172a;">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
+                        <td style="padding: 10px; border: 1px solid #475569;">${lot.lotNumber || ''}</td>
+                        <td style="padding: 10px; border: 1px solid #475569;">${exp.toLocaleDateString('th-TH')}</td>
+                        <td style="padding: 10px; border: 1px solid #475569; text-align: center; font-weight: bold; font-size: 13px;">${lot.qty || 0}</td>
+                        <td style="padding: 10px; border: 1px solid #475569;">${med ? med.unit : '-'}</td>
+                        <td style="padding: 10px; border: 1px solid #475569;">${lot.storage || '-'}</td>
                     </tr>
                 `;
             }
         });
         
         if (!hasData) {
-            tableHTML += `<tr><td colspan="7" class="p-8 text-center text-slate-400 italic bg-slate-50/30">ไม่พบข้อมูลยาตามเงื่อนไขวันที่เลือก</td></tr>`;
+            tableHTML += `<tr><td colspan="7" style="padding: 20px; text-align: center; color: #94a3b8; italic: true; border: 1px solid #475569;">ไม่พบข้อมูลยาตามเงื่อนไขวันที่เลือก</td></tr>`;
         }
         tableHTML += "</tbody></table></div>";
     } else {
         tableHTML = `
-            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white">
-                <table class="w-full text-sm text-left border-collapse min-w-[700px]">
-                    <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-xs font-bold">
-                        <tr>
-                            <th class="p-3 border-b border-slate-200 font-semibold" style="width: 35%;">ชื่อสินค้า / ยาหลัก</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">ประเภท</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">Lot ที่ตรวจ</th>
-                            <th class="p-3 border-b border-slate-200 text-center font-semibold">สถานะ</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">ผู้ตรวจสอบ</th>
-                            <th class="p-3 border-b border-slate-200 font-semibold">วันที่ตรวจสอบล่าสุด</th>
+            <div class="overflow-x-auto" style="width: 100%; overflow-x: auto;">
+                <table border="1" style="width: 100%; border-collapse: collapse; min-width: 700px; font-size: 12px; font-family: sans-serif; border: 2px solid #475569;">
+                    <thead>
+                        <tr style="background-color: #f1f5f9;">
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0; width: 35%;">ชื่อสินค้า / ยาหลัก</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">ประเภท</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">Lot ที่ตรวจ</th>
+                            <th style="padding: 10px; text-align: center; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">สถานะ</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">ผู้ตรวจสอบ</th>
+                            <th style="padding: 10px; text-align: left; font-weight: bold; border: 1px solid #475569; color: #1e293b; background-color: #e2e8f0;">วันที่ตรวจสอบล่าสุด</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                    <tbody style="color: #334155;">
         `;
         
         let hasData = false;
@@ -672,24 +686,24 @@ function generateReport(reportType) {
                 hasData = true;
                 const med = APP_STATE.master.find(m => m.barcodeId && lot.barcodeId && m.barcodeId.toString() === lot.barcodeId.toString());
                 tableHTML += `
-                    <tr class="hover:bg-slate-50/60 transition-colors">
-                        <td class="p-3 font-bold text-slate-800">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded-md text-[10px] font-bold">${med ? med.type : '-'}</span></td>
-                        <td class="p-3 font-mono text-slate-600">${lot.lotNumber || ''}</td>
-                        <td class="p-3 text-center">
+                    <tr style="border-bottom: 1px solid #475569;">
+                        <td style="padding: 10px; border: 1px solid #475569; font-weight: bold; color: #0f172a;">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td>
+                        <td style="padding: 10px; border: 1px solid #475569;"><span style="padding: 2px 6px; background-color: #f1f5f9; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid #cbd5e1;">${med ? med.type : '-'}</span></td>
+                        <td style="padding: 10px; border: 1px solid #475569; font-family: monospace;">${lot.lotNumber || ''}</td>
+                        <td style="padding: 10px; border: 1px solid #475569; text-align: center; font-weight: bold;">
                             ${lot.isInspected 
-                                ? '<span class="px-2 py-0.5 bg-[#E2F2D5] text-[#4A6B32] rounded-md font-bold text-[11px]">✓ ตรวจสอบแล้ว</span>'
-                                : '<span class="px-2 py-0.5 bg-[#F6C2C2] text-[#7A2E2E] rounded-md font-bold text-[11px]">✕ ค้างตรวจ</span>'}
+                                ? '<span style="color: #16a34a; font-weight: bold;">✓ ตรวจสอบแล้ว</span>'
+                                : '<span style="color: #dc2626; font-weight: bold;">✕ ค้างตรวจ</span>'}
                         </td>
-                        <td class="p-3 font-semibold text-slate-700">${lot.inspector || '-'}</td>
-                        <td class="p-3 text-slate-500">${insTime.toLocaleDateString('th-TH')} ${insTime.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.</td>
+                        <td style="padding: 10px; border: 1px solid #475569; font-weight: 500;">${lot.inspector || '-'}</td>
+                        <td style="padding: 10px; border: 1px solid #475569; color: #64748b;">${insTime.toLocaleDateString('th-TH')} ${insTime.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'})} น.</td>
                     </tr>
                 `;
             }
         });
         
         if (!hasData) {
-            tableHTML += `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic bg-slate-50/30">ไม่พบประวัติการตรวจเช็คตามเงื่อนไขวันที่เลือก</td></tr>`;
+            tableHTML += `<tr><td colspan="6" style="padding: 20px; text-align: center; color: #94a3b8; italic: true; border: 1px solid #475569;">ไม่พบประวัติการตรวจเช็คตามเงื่อนไขวันที่เลือก</td></tr>`;
         }
         tableHTML += "</tbody></table></div>";
     }
