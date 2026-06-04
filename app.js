@@ -116,7 +116,7 @@ async function reloadDataFromServer() {
     } catch(e) {
         console.error("โหลดข้อมูลคลังยาล้มเหลว:", e);
     } finally {
-        if (Swal.isVisible()) Swal.close(); // บังคับปิดกล่องโหลดทุกกรณีเพื่อป้องกันแอปค้าง
+        if (Swal.isVisible()) Swal.close(); 
     }
 }
 
@@ -208,6 +208,7 @@ function searchMedicines() {
     }
 }
 
+// 🛠️ แก้ไขคุณสมบัติข้อที่ 1: แสดงจำนวนยารวมทุกล็อตรวมกันไว้ที่การ์ดหน้าตรวจสอบยา
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
     if (!container) return;
@@ -227,6 +228,9 @@ function renderInspectList() {
         const totalLotsCount = drugLots.length;
         const inspectedLotsCount = drugLots.filter(l => l.isInspected === true).length;
         
+        // คำนวณหายอดรวมยาทุกล็อตที่มีอยู่จริงในระบบตอนปัจจุบัน
+        const sumTotalQty = drugLots.reduce((acc, current) => acc + Number(current.qty || 0), 0);
+        
         let statusBadge = "";
         if (totalLotsCount === 0) {
             statusBadge = `<span class="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-400 rounded-md font-medium">ไม่มีล็อตในคลัง</span>`;
@@ -244,10 +248,13 @@ function renderInspectList() {
                 <span class="text-[9px] uppercase px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-500">${drug.type}</span>
                 <h4 class="font-bold text-slate-700 text-sm mt-1">${drug.drugName}</h4>
                 <p class="text-xs text-slate-400 font-mono">Barcode: ${drug.barcodeId} | หน่วย: ${drug.unit}</p>
-                <p class="text-xs text-slate-500">ที่เก็บ: ${drug.storage} | เกณฑ์เบิก: ${drug.stock}</p>
+                <p class="text-xs text-slate-500">ที่เก็บหลัก: ${drug.storage} | เกณฑ์เบิก: ${drug.stock}</p>
             </div>
-            <div class="text-right shrink-0">
-                ${statusBadge}
+            <div class="text-right shrink-0 space-y-1.5">
+                <div>${statusBadge}</div>
+                <div class="text-xs font-semibold text-slate-600">
+                    คงคลังรวม: <span class="text-emerald-600 font-black text-sm">${sumTotalQty}</span> ${drug.unit}
+                </div>
             </div>
         `;
         container.appendChild(div);
@@ -273,6 +280,7 @@ function toggleScanner() {
     }
 }
 
+// 🛠️ แก้ไขคุณสมบัติข้อที่ 2: เปลี่ยนช่องพิมพ์สถานที่เก็บย่อยให้ดึงค่าจาก Medicine_Master มาให้เลือก
 function openModal(barcodeId) {
     APP_STATE.selectedBarcode = barcodeId;
     const drug = APP_STATE.master.find(m => m.barcodeId.toString() === barcodeId.toString());
@@ -280,6 +288,34 @@ function openModal(barcodeId) {
     
     document.getElementById("modal-drug-name").innerText = drug.drugName;
     document.getElementById("modal-barcode-id").innerText = "บาร์โค้ด: " + drug.barcodeId + " | หน่วย: " + drug.unit;
+    
+    // ค้นหาสถานที่จัดเก็บหลักจากคอลัมน์ E นำมาใส่เป็นตัวเลือกเริ่มต้นใน Dropdown
+    const selectStorage = document.getElementById("lot-storage");
+    if(selectStorage) {
+        selectStorage.innerHTML = ""; // เคลียร์ตัวเลือกเก่าออกก่อน
+        
+        // ดึงค่าสถานที่จัดเก็บจริงมาจากประวัติหลัก
+        const mainStorageValue = drug.storage ? drug.storage.trim() : "ไม่ระบุสถานที่";
+        
+        // แตกตัวเลือกเผื่อกรณีผู้ใช้ใช้เครื่องหมายคอมมาแยกห้องเก็บของ (เช่น คลังA, ตู้เย็น) หรือสร้างรายการเดียวขึ้นมา
+        const optionsArray = mainStorageValue.split(/[,，/]/);
+        
+        optionsArray.forEach(opt => {
+            const trimmedOpt = opt.trim();
+            if(trimmedOpt) {
+                const optionEl = document.createElement("option");
+                optionEl.value = trimmedOpt;
+                optionEl.innerText = trimmedOpt;
+                selectStorage.appendChild(optionEl);
+            }
+        });
+        
+        // เติมตัวเลือกเพิ่มเติมสำรองไว้เผื่อต้องการเลือกเก็บจุดอื่นนอกเหนือจาก Master
+        const defaultOpt = document.createElement("option");
+        defaultOpt.value = "-";
+        defaultOpt.innerText = "อื่นๆ / ไม่ระบุสถานที่ย่อย";
+        selectStorage.appendChild(defaultOpt);
+    }
     
     renderModalLots();
     document.getElementById("lot-modal").classList.remove("hidden");
@@ -290,7 +326,6 @@ function closeModal() {
     document.getElementById("lot-number").value = "";
     document.getElementById("lot-exp").value = "";
     document.getElementById("lot-qty").value = "";
-    document.getElementById("lot-storage").value = "";
     document.getElementById("lot-note").value = "";
 }
 
@@ -313,7 +348,7 @@ function renderModalLots() {
         div.innerHTML = `
             <div>
                 <p class="font-bold text-slate-700">Lot: ${lot.lotNumber} | <span class="text-rose-600 font-bold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
-                <p class="text-slate-400 mt-0.5">จำนวน: ${lot.qty} | ที่เก็บ: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
+                <p class="text-slate-400 mt-0.5">จำนวน: ${lot.qty} | ที่เก็บย่อย: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
                 ${lot.isInspected ? `<p class="text-[10px] text-emerald-600 font-bold mt-0.5">✓ ตรวจแล้วโดย ${lot.inspector}</p>` : ''}
             </div>
             <div class="flex gap-1 shrink-0">
@@ -329,7 +364,7 @@ async function submitLotForm() {
     const num = document.getElementById("lot-number").value.trim();
     const exp = document.getElementById("lot-exp").value;
     const qty = document.getElementById("lot-qty").value;
-    const storage = document.getElementById("lot-storage").value.trim();
+    const storage = document.getElementById("lot-storage").value; // รับค่าจาก Dropdown ที่เลือกแทนอินพุตพิมพ์มือ
     const note = document.getElementById("lot-note").value.trim();
 
     if(!num || !exp || !qty) return Swal.fire("ข้อมูลไม่ครบ", "โปรดระบุ เลขล็อต, วันหมดอายุ และจำนวนยา", "warning");
@@ -577,7 +612,7 @@ function generateReport(reportType) {
                     <tr class="text-slate-600">
                         <td class="p-2 border font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td><td class="p-2 border">${med ? med.type : '-'}</td>
                         <td class="p-2 border font-mono">${lot.lotNumber || ''}</td>
-                        <td class="p-2 border text-center text-emerald-600 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
+                        <td class="p-2 border text-center text-teal-600 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
                         <td class="p-2 border">${lot.inspector || '-'}</td>
                         <td class="p-2 border">${insTime.toLocaleDateString('th-TH')}</td>
                     </tr>
