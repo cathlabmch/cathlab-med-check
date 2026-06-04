@@ -209,7 +209,6 @@ function renderDashboard() {
     });
 }
 
-
 function filterByType(type) {
     APP_STATE.activeType = type;
     document.querySelectorAll("#type-pills button").forEach(b => {
@@ -229,7 +228,7 @@ function searchMedicines() {
     }
 }
 
-// 🛠️ แก้ไขคุณสมบัติข้อที่ 1: แสดงจำนวนยารวมทุกล็อตรวมกันไว้ที่การ์ดหน้าตรวจสอบยา
+// แสดงจำนวนยารวมทุกล็อตรวมกันไว้ที่การ์ดหน้าตรวจสอบยา
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
     if (!container) return;
@@ -301,8 +300,7 @@ function toggleScanner() {
     }
 }
 
-// 🛠️ แก้ไขคุณสมบัติข้อที่ 2: เปลี่ยนช่องพิมพ์สถานที่เก็บย่อยให้ดึงค่าจาก Medicine_Master มาให้เลือก
-// ค้นหาฟังก์ชัน openModal ของเดิมใน app.js แล้ววางโค้ดชุดนี้ทับได้เลยครับ
+// เปลี่ยนช่องพิมพ์สถานที่เก็บย่อยให้ดึงค่าจาก Medicine_Master มาให้เลือก
 function openModal(barcodeId) {
     APP_STATE.selectedBarcode = barcodeId;
     const drug = APP_STATE.master.find(m => m.barcodeId.toString() === barcodeId.toString());
@@ -311,16 +309,13 @@ function openModal(barcodeId) {
     document.getElementById("modal-drug-name").innerText = drug.drugName;
     document.getElementById("modal-barcode-id").innerText = "บาร์โค้ด: " + drug.barcodeId + " | หน่วย: " + drug.unit;
     
-    // 💡 ส่วนแก้ไขหลัก: ดึงข้อมูลสถานที่จัดเก็บจริงจากคอลัมน์ E ของยาหลักตัวนี้มาสร้างเป็น Dropdown ตัวเลือก
     const selectStorage = document.getElementById("lot-storage");
     if (selectStorage) {
-        selectStorage.innerHTML = ""; // เคลียร์ตัวเลือกเก่าที่ค้างอยู่ออกก่อน
+        selectStorage.innerHTML = ""; // เคลียร์ตัวเลือกเก่า
         
-        // อ่านค่าจากสถานที่จัดเก็บหลัก (คอลัมน์ E)
         const mainStorageValue = drug.storage ? drug.storage.trim() : "";
         
         if (mainStorageValue && mainStorageValue !== "-") {
-            // เผื่อกรณีในคอลัมน์ E มีการคั่นด้วยเครื่องหมายจุลภาค เช่น "คลังยา, ตู้เย็น, ชั้นวาง A" จะถูกแยกเป็นตัวเลือกให้เลือกง่ายๆ
             const optionsArray = mainStorageValue.split(/[,，/]/);
             
             optionsArray.forEach(opt => {
@@ -333,14 +328,12 @@ function openModal(barcodeId) {
                 }
             });
         } else {
-            // ถ้าในคอลัมน์ E ของ Master ไม่ได้ระบุข้อมูลไว้ ให้ขึ้นตัวเลือกพื้นฐาน
             const defaultOpt = document.createElement("option");
             defaultOpt.value = "ไม่ระบุสถานที่";
             defaultOpt.innerText = "ไม่ระบุสถานที่หลัก (คอลัมน์ E ว่าง)";
             selectStorage.appendChild(defaultOpt);
         }
         
-        // เพิ่มตัวเลือกเสริม "อื่นๆ" ไว้ท้ายสุดเสมอ เพื่อความยืดหยุ่นในกรณีฉุกเฉิน
         const otherOpt = document.createElement("option");
         otherOpt.value = "-";
         otherOpt.innerText = "อื่นๆ / ไม่ระบุสถานที่ย่อย";
@@ -376,7 +369,6 @@ function renderModalLots() {
     myLots.forEach(lot => {
         const exp = new Date(lot.expDate);
         
-        // คำนวณจำนวนเดือนคงเหลือสำหรับแสดงในการ์ดหน้าจัดการ Lot
         const diffTime = exp - now;
         const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30.44));
         
@@ -394,6 +386,7 @@ function renderModalLots() {
             lot.isInspected ? 'bg-[#E2F2D5]/20 border-[#E2F2D5] text-slate-700' : 'bg-white border-slate-100 shadow-xs'
         }`;
 
+        // เปลี่ยนฟังก์ชันปุ่มลบจาก deleteLotRow เป็น deleteSpecificLot เพื่อให้ตรงกับฟังก์ชันที่มีอยู่จริง
         div.innerHTML = `
             <div class="space-y-1">
                 <div class="flex items-center flex-wrap gap-1">
@@ -408,19 +401,18 @@ function renderModalLots() {
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <span class="font-black text-sm text-slate-600 bg-slate-50 px-2 py-1 rounded-xl border border-slate-100 min-w-[40px] text-center">${lot.qty}</span>
-                <button onclick="deleteLotRow('${lot.lotNumber}')" class="p-1.5 text-slate-300 hover:text-[#7A2E2E] hover:bg-red-50 rounded-xl transition-colors cursor-pointer" title="ลบล็อตนี้">&times;</button>
+                <button onclick="deleteSpecificLot('${lot.lotNumber}')" class="p-1.5 text-slate-300 hover:text-[#7A2E2E] hover:bg-red-50 rounded-xl transition-colors cursor-pointer" title="ลบล็อตนี้">&times;</button>
             </div>
         `;
         listDiv.appendChild(div);
     });
 }
 
-
 async function submitLotForm() {
     const num = document.getElementById("lot-number").value.trim();
     const exp = document.getElementById("lot-exp").value;
     const qty = document.getElementById("lot-qty").value;
-    const storage = document.getElementById("lot-storage").value; // ดึงค่าที่เลือกจาก Dropdown <select> ตัวใหม่
+    const storage = document.getElementById("lot-storage").value; 
     const note = document.getElementById("lot-note").value.trim();
 
     if(!num || !exp || !qty) return Swal.fire("ข้อมูลไม่ครบ", "โปรดระบุ เลขล็อต, วันหมดอายุ และจำนวนยา", "warning");
@@ -432,7 +424,7 @@ async function submitLotForm() {
         lotNumber: num, 
         expDate: exp, 
         qty: Number(qty),
-        storage: storage, // ส่งค่าสถานที่ที่เลือกจากคอลัมน์ E ไปบันทึกในแผ่นงาน Lot
+        storage: storage, 
         note: note, 
         isInspected: false, 
         inspector: "", 
@@ -459,6 +451,7 @@ async function submitLotForm() {
         Swal.fire("ล้มเหลว", "ไม่สามารถบันทึกได้", "error"); 
     }
 }
+
 async function inspectSpecificLot(lotNumber) {
     showLoading("กำลังยืนยันล็อต...");
     const currentLot = APP_STATE.lots.find(l => l.barcodeId && APP_STATE.selectedBarcode && l.barcodeId.toString() === APP_STATE.selectedBarcode.toString() && l.lotNumber.toString() === lotNumber.toString());
@@ -696,19 +689,46 @@ function printReport(containerId) {
     window.print();
 }
 
+// ระบบออกจากระบบคลังยา (เติมเต็มส่วนที่ค้างอยู่ให้สมบูรณ์)
 function handleLogout() {
     Swal.fire({
         title: 'ออกจากระบบคลังยา?',
-        text: "คุณต้องการยกเลิกเซสชันและล็อกเอาท์ออกจากระบบ CATH LAB หรือไม่",
+        text: "คุณต้องการล็อกเอาท์ออกจากระบบหรือไม่",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#10b981',
-        cancelButtonColor: '#f43f5e',
-        confirmButtonText: 'ยืนยันล็อกเอาท์',
+        confirmButtonColor: '#10b981', 
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'ใช่, ออกจากระบบ',
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
         if (result.isConfirmed) {
-            location.reload(); 
+            // เคลียร์ค่า State ทั้งหมดกลับเป็นค่าเริ่มต้น
+            APP_STATE.user = null;
+            APP_STATE.role = null;
+            APP_STATE.master = [];
+            APP_STATE.lots = [];
+            APP_STATE.activeType = 'ALL';
+            APP_STATE.activeSearch = '';
+            APP_STATE.selectedBarcode = null;
+            
+            if(APP_STATE.scanner) {
+                APP_STATE.scanner.clear();
+                APP_STATE.scanner = null;
+            }
+
+            // รีเซ็ต Input ฟอร์มเข้าสู่ระบบ
+            const inputEmp = document.getElementById("input-empid");
+            if (inputEmp) inputEmp.value = "";
+
+            // ซ่อนเมนูผู้ดูแลระบบกรณีเป็น Admin เก่า
+            const menuAdmin = document.getElementById("menu-admin");
+            if (menuAdmin) menuAdmin.classList.add("hidden");
+
+            // สลับหน้าจอแสดงผลกลับไปหน้า Login
+            document.getElementById("app-screen").classList.add("hidden");
+            document.getElementById("login-screen").classList.remove("hidden");
+
+            Swal.fire("ออกจากระบบสำเร็จ", "คุณได้ออกจากระบบคลังยา CATH LAB เรียบร้อยแล้ว", "success");
         }
     });
 }
