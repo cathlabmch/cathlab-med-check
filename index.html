@@ -161,4 +161,113 @@
                             <option value="ยส.">ยส.</option>
                         </select>
                     </div>
-                    <button onclick="submitNewDrug()" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] rounded-xl
+                    <button onclick="submitNewDrug()" class="px-4 py-2.5 bg-[#D4EDF4] text-[#2C5282] rounded-xl text-xs font-bold hover:bg-[#BFE0EB] transition-colors cursor-pointer shadow-sm">
+                        💾 บันทึกโครงสร้างยาหลักเข้าฐานข้อมูล
+                    </button>
+                </div>
+                
+                <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-4">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <h3 class="text-sm font-bold text-slate-600">📋 คลังสารบบยาหลักทั้งหมดปัจจุบัน</h3>
+                        <input type="text" id="admin-search" oninput="renderAdminList()" placeholder="ค้นหายาหลัก..." class="px-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4] w-48">
+                    </div>
+                    <div id="admin-drug-list" class="divide-y divide-slate-100 max-h-[350px] overflow-y-auto pr-1"></div>
+                </div>
+            </section>
+
+            <section id="section-report" class="content-section hidden space-y-5">
+                <h2 class="text-xl font-extrabold text-slate-800">ศูนย์ข้อมูลและออกรายงานประเมินผลคลังยา</h2>
+                <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">ตั้งแต่วันที่</label>
+                        <input type="date" id="report-start" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4]">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">ถึงวันที่</label>
+                        <input type="date" id="report-end" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4]">
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="generateReport('all')" class="flex-1 py-2 bg-[#D4EDF4] text-[#2C5282] rounded-xl text-xs font-bold hover:bg-[#BFE0EB] transition-colors cursor-pointer">รายงานยารวม</button>
+                        <button onclick="generateReport('checked')" class="flex-1 py-2 bg-[#E2F2D5] text-[#4A6B32] rounded-xl text-xs font-bold hover:bg-[#D2EBC0] transition-colors cursor-pointer">รายงานสถานะตรวจ</button>
+                    </div>
+                </div>
+                <div id="report-preview-container" class="hidden bg-white p-6 rounded-3xl border border-slate-100 shadow-xs space-y-4"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <div id="lot-modal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col animate-fadeIn">
+            
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-3xl">
+                <div>
+                    <h3 id="modal-drug-name" class="font-black text-slate-700 text-base">ชื่อสินค้าเวชภัณฑ์ทางการแพทย์</h3>
+                    <p id="modal-barcode-id" class="text-xs text-slate-400 font-medium mt-0.5">รหัสบาร์โค้ด: -</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-xl hover:bg-slate-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 flex-1">
+                
+                <div class="bg-slate-50 border border-slate-100 p-4 rounded-2xl space-y-3">
+                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider">📦 บันทึกหรือแก้ไขข้อมูลล็อตย่อย</h4>
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <div>
+                            <label class="block text-[11px] text-slate-500 font-bold mb-1">เลขล็อต (Lot Number)</label>
+                            <input type="text" id="lot-number" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4] font-bold" placeholder="เช่น L67001">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-500 font-bold mb-1">วันหมดอายุ (EXP)</label>
+                            <input type="date" id="lot-exp" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4]">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[11px] text-slate-500 font-bold mb-1">จำนวนยาคงคลัง</label>
+                            <input type="number" id="lot-qty" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4] text-center font-bold" placeholder="0">
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-[11px] text-slate-500 font-bold mb-1">จุดจัดเก็บย่อย</label>
+                            <input type="text" id="lot-storage" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4]" placeholder="ตู้เย็นชั้น 2, ชั้นวาง A">
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-[11px] text-slate-500 font-bold mb-1">หมายเหตุเพิ่มเติม</label>
+                            <input type="text" id="lot-note" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#D4EDF4]" placeholder="-">
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-2 pt-1">
+                        <button id="btn-submit-lot" onclick="submitLotForm()" class="w-full py-2 bg-[#D4EDF4] text-[#2C5282] font-bold rounded-xl text-xs hover:bg-[#BFE0EB] transition-all cursor-pointer">
+                            ➕ บันทึกล็อตยา
+                        </button>
+                        <button onclick="resetLotForm()" class="px-4 py-2 bg-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-300 transition-all cursor-pointer">
+                            ล้างฟอร์ม
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-black text-slate-400 uppercase tracking-wider">📋 รายการล็อตทั้งหมดในคลังระบบปัจจุบัน</h4>
+                    <div id="modal-lots-list" class="space-y-2 max-h-44 overflow-y-auto pr-1">
+                        </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50 rounded-b-3xl flex justify-end gap-2">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-300 transition-colors cursor-pointer">
+                    ปิดหน้าต่าง
+                </button>
+                <button onclick="submitFinalVerify()" class="px-4 py-2 bg-[#E2F2D5] text-[#4A6B32] font-bold rounded-xl text-xs hover:bg-[#D2EBC0] transition-colors cursor-pointer">
+                    ✓ ยืนยันความครบถ้วนทุกล็อต
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
