@@ -103,20 +103,29 @@ async function reloadDataFromServer() {
         });
         const result = await res.json();
         
-        if(result.success) {
-            // รับค่า Object ตรงๆ จากเซิร์ฟเวอร์โดยไม่ต้องแปลง Index ซ้ำซ้อน
-            APP_STATE.master = result.master || [];
-            APP_STATE.lots = result.lots || [];
+        // ตรวจสอบความสมบูรณ์ของโครงสร้างข้อมูลก่อนบันทึกลงเว็บ State
+        if (result.success && result.data) {
+            APP_STATE.master = result.data.master || [];
+            APP_STATE.lots = result.data.lots || [];
 
-            // ทำการอัปเดตรีเฟรชหน้าจอแสดงผลใหม่ทั้งหมด
+            // เรียก Render ข้อมูลขึ้นสู่หน้าจอ
             renderDashboard();
             renderInspectList();
+        } else {
+            console.error("โครงสร้างข้อมูลจากเซิร์ฟเวอร์ไม่ถูกต้อง", result);
+            Swal.fire("ข้อมูลไม่ตรงระบบ", "เซิร์ฟเวอร์ส่งข้อมูลกลับมาผิดพลาด", "error");
         }
     } catch(e) {
-        console.error("โหลดข้อมูลคลังยาล้มเหลว:", e);
-        Swal.fire("ดึงข้อมูลล้มเหลว", "ไม่สามารถเชื่อมต่อกับฐานข้อมูลคลังยาได้", "error");
+        console.error("โหลดข้อมูลล้มเหลว:", e);
+        Swal.fire("การเชื่อมต่อขัดข้อง", "ไม่สามารถดึงข้อมูลคลังยาได้เนื่องจากระบบฐานข้อมูลขัดข้อง", "error");
+    } finally {
+        // บังคับปิดไอคอนโหลดหมุนๆ ทุกกรณี ไม่ว่าจะโหลดสำเร็จหรือเกิดการ Error
+        if (Swal.isVisible()) {
+            Swal.close();
+        }
     }
 }
+
 
 function navigate(menu) {
     document.querySelectorAll(".content-section").forEach(s => s.classList.add("hidden"));
