@@ -179,29 +179,42 @@ function renderDashboard() {
 
     filtered.forEach(item => {
         const exp = new Date(item.expDate);
+        // คำนวณจำนวนเดือนคงเหลือจริง
         const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
         
+        // กำหนดสีพื้นหลังของแถวตามความวิกฤต (คงโครงสร้างสีซอฟต์พาสเทลเดิม)
         let colorClass = "";
-        if (diffMonths <= 3) colorClass = "bg-[#F6C2C2]/50 border-l-4 border-[#F6C2C2] text-[#632525] font-medium"; 
-        else if (diffMonths <= 6) colorClass = "bg-[#F9FBBA]/60 border-l-4 border-[#E2E67A] text-[#52541C]"; 
-        else colorClass = "bg-[#D4EDF4]/30 border-l-4 border-[#B0E2F0] text-[#1F3E47]"; 
+        let monthBadge = "";
+        
+        if (diffMonths <= 3) {
+            colorClass = "bg-[#F6C2C2]/40 border-l-4 border-[#F6C2C2] text-[#632525]";
+            monthBadge = `<span class="px-2 py-0.5 bg-[#F6C2C2] text-[#7A2E2E] rounded-md font-bold text-[11px] shadow-2xs animate-pulse">อีก ${diffMonths} เดือน (วิกฤต)</span>`;
+        } else if (diffMonths <= 6) {
+            colorClass = "bg-[#F9FBBA]/40 border-l-4 border-[#E2E67A] text-[#52541C]";
+            monthBadge = `<span class="px-2 py-0.5 bg-[#F9FBBA] text-[#61631F] rounded-md font-bold text-[11px] shadow-2xs">อีก ${diffMonths} เดือน</span>`;
+        } else {
+            colorClass = "bg-[#D4EDF4]/20 border-l-4 border-[#B0E2F0] text-[#1F3E47]";
+            monthBadge = `<span class="px-2 py-0.5 bg-[#D4EDF4] text-[#2C5282] rounded-md font-bold text-[11px] shadow-2xs">อีก ${diffMonths} เดือน</span>`;
+        }
 
         const tr = document.createElement("tr");
-        tr.className = colorClass;
+        tr.className = `${colorClass} hover:bg-slate-100/50 transition-colors border-b border-slate-100/60`;
+        
+        // แมปข้อมูล 9 คอลัมน์ให้ตรงตามตาราง HTML เป๊ะๆ ป้องกันการเลื่อนขยับ
         tr.innerHTML = `
-            <td class="p-4 font-mono text-xs">${item.barcodeId || ''}</td>
-            <td class="p-4 font-bold text-xs sm:text-sm">${item.drugName || ''}</td>
-            <td class="p-4 text-xs">${item.lotNumber || ''}</td>
-            <td class="p-4 text-xs">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
-            <td class="p-4 text-center font-black">${item.qty || 0}</td>
-            <td class="p-4 text-xs">${item.unit || ''}</td>
-            <td class="p-4 text-xs">${item.storage || '-'}</td>
-            <td class="p-4 text-xs italic opacity-75">${item.note || '-'}</td>
+            <td class="p-4 font-mono text-xs font-semibold">${item.barcodeId || ''}</td>
+            <td class="p-4 font-bold text-xs sm:text-sm text-slate-700">${item.drugName || ''}</td>
+            <td class="p-4 text-xs font-medium">${item.lotNumber || ''}</td>
+            <td class="p-4 text-xs font-medium">${new Date(item.expDate).toLocaleDateString('th-TH')}</td>
+            <td class="p-4 text-center">${monthBadge}</td>
+            <td class="p-4 text-center font-black text-sm text-slate-800">${item.qty || 0}</td>
+            <td class="p-4 text-xs font-medium text-slate-500">${item.unit || ''}</td>
+            <td class="p-4 text-xs font-medium text-slate-600">${item.storage || '-'}</td>
+            <td class="p-4 text-xs italic text-slate-400 font-medium">${item.note || '-'}</td>
         `;
         tbody.appendChild(tr);
     });
 }
-
 function filterByType(type) {
     APP_STATE.activeType = type;
     document.querySelectorAll("#type-pills button").forEach(b => {
