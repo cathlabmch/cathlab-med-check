@@ -1,7 +1,5 @@
-// เปลี่ยนข้อความด้านล่างเป็น Web App URL ที่ได้จากการ Deploy Google Apps Script
 const API_URL = "https://script.google.com/macros/s/AKfycbyCG5h6hCagw0Lh_CAwVuTw-a5yneALPcbSx_f5cwlfRJMvt2JSvQJ4I9V6urtiRqJg/exec";
 
-// สร้าง State เก็บข้อมูลในเว็บเพื่อลดการกดเรียกฐานข้อมูลบ่อยครั้ง
 let APP_STATE = {
     user: null,
     role: null,
@@ -13,9 +11,7 @@ let APP_STATE = {
     scanner: null
 };
 
-// เริ่มต้นระบบเมื่อโหลดหน้าเสร็จสิ้น
 document.addEventListener("DOMContentLoaded", () => {
-    // การทำงานปุ่ม Login และสิทธิ์ Enter
     const inputEmp = document.getElementById("input-empid");
     if (inputEmp) {
         inputEmp.addEventListener("keypress", (e) => {
@@ -30,7 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnLogout) btnLogout.addEventListener("click", handleLogout);
 });
 
-// ฟังก์ชันเปิดแจ้งเตือนโหลดข้อมูลแบบมินิมอลสวยงาม
 function showLoading(msg = "กำลังบันทึกข้อมูล...") {
     Swal.fire({
         title: msg,
@@ -39,7 +34,6 @@ function showLoading(msg = "กำลังบันทึกข้อมูล.
     });
 }
 
-// 1. ตรวจสอบสิทธิ์เข้าใช้งาน
 async function handleLogin() {
     const inputEmp = document.getElementById("input-empid");
     if (!inputEmp) return;
@@ -65,7 +59,6 @@ async function handleLogin() {
             
             document.getElementById("txt-user-name").innerText = result.name;
             
-            // แสดงวันที่ล็อกอินก่อนเวลาตามที่กำหนด (รูปแบบ: วัน/เดือน/ปี เวลา น.)
             const loginDate = new Date().toLocaleDateString('th-TH');
             const loginTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
             document.getElementById("txt-login-time").innerText = `ล็อกอินเมื่อ: ${loginDate} ${loginTime} น.`;
@@ -82,7 +75,6 @@ async function handleLogin() {
             navigate('dashboard');
             Swal.close();
         } else {
-            // โชว์ข้อความแจ้งเตือนความผิดพลาดแบบละเอียด และล้างข้อมูลในช่องกรอกพร้อมโฟกัส
             Swal.fire({
                 title: "ไม่พบผู้ใช้งาน",
                 html: result.message ? result.message.replace(/\n/g, "<br>") : "รหัสพนักงานไม่ถูกต้อง",
@@ -93,13 +85,12 @@ async function handleLogin() {
         }
     } catch (err) {
         console.error("Login Error:", err);
-        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดในการรับส่งข้อมูลกับเซิร์ฟเวอร์ หรือสิทธิ์เว็บแอปไม่ถูกต้อง", "error");
+        Swal.fire("เชื่อมต่อล้มเหลว", "เกิดข้อผิดพลาดกับเซิร์ฟเวอร์", "error");
         inputEmp.value = "";
         inputEmp.focus();
     }
 }
 
-// 2. ดึงข้อมูลครั้งเดียวมาเก็บไว้ในเว็บ (State)
 async function reloadDataFromServer() {
     try {
         const res = await fetch(API_URL, {
@@ -119,12 +110,11 @@ async function reloadDataFromServer() {
     }
 }
 
-// 3. ควบคุมการเปลี่ยนหน้าแถบนำทาง (ปรับ CSS Class เพื่อให้รองรับโทนพาสเทล)
 function navigate(menu) {
     document.querySelectorAll(".content-section").forEach(s => s.classList.add("hidden"));
     document.querySelectorAll(".nav-item").forEach(i => {
-        i.classList.remove("bg-teal-400", "text-white", "shadow-sm", "shadow-teal-100/50");
-        i.classList.add("text-slate-600", "hover:bg-teal-50/50");
+        i.classList.remove("bg-[#D4EDF4]", "text-[#2C5282]", "shadow-xs");
+        i.classList.add("text-slate-600", "hover:bg-[#D4EDF4]/30");
     });
 
     const targetSection = document.getElementById(`section-${menu}`);
@@ -132,8 +122,8 @@ function navigate(menu) {
     
     const event = window.event;
     if(event && event.currentTarget) {
-        event.currentTarget.classList.remove("text-slate-600", "hover:bg-teal-50/50");
-        event.currentTarget.classList.add("bg-teal-400", "text-white", "shadow-sm", "shadow-teal-100/50");
+        event.currentTarget.classList.remove("text-slate-600", "hover:bg-[#D4EDF4]/30");
+        event.currentTarget.classList.add("bg-[#D4EDF4]", "text-[#2C5282]", "shadow-xs");
     }
     
     if(menu === 'dashboard') renderDashboard();
@@ -141,7 +131,7 @@ function navigate(menu) {
     if(menu === 'admin') renderAdminList();
 }
 
-// 4. หน้าจอ DASHBOARD (คำนวณวันอายุ 9 เดือน + แบ่งกลุ่มแถบสีพาสเทลนุ่มนวล)
+// ปรับสีตารางแดชบอร์ดตาม Pantone การแจ้งเตือนความเร่งด่วนหมดอายุ
 function renderDashboard() {
     const tbody = document.getElementById("table-dashboard-body");
     if (!tbody) return;
@@ -166,7 +156,6 @@ function renderDashboard() {
         }
     });
 
-    // เรียงวันหมดอายุใกล้สุดขึ้นก่อน
     filtered.sort((a, b) => new Date(a.expDate) - new Date(b.expDate));
 
     filtered.forEach(item => {
@@ -174,9 +163,12 @@ function renderDashboard() {
         const diffMonths = (exp.getFullYear() - today.getFullYear()) * 12 + (exp.getMonth() - today.getMonth());
         
         let colorClass = "";
-        if (diffMonths <= 3) colorClass = "bg-rose-50/70 border-l-4 border-rose-400 text-rose-900 font-medium"; 
-        else if (diffMonths <= 6) colorClass = "bg-amber-50/70 border-l-4 border-amber-400 text-amber-950"; 
-        else colorClass = "bg-yellow-50/60 border-l-4 border-yellow-400 text-slate-700"; 
+        // 0-3 เดือน: สีแดงพาสเทล #F6C2C2
+        if (diffMonths <= 3) colorClass = "bg-[#F6C2C2]/50 border-l-4 border-[#F6C2C2] text-[#632525] font-medium"; 
+        // 3-6 เดือน: สีเหลืองพาสเทล #F9FBBA
+        else if (diffMonths <= 6) colorClass = "bg-[#F9FBBA]/60 border-l-4 border-[#E2E67A] text-[#52541C]"; 
+        // 6-9 เดือน: สีฟ้าพาสเทลเบาๆ #D4EDF4
+        else colorClass = "bg-[#D4EDF4]/30 border-l-4 border-[#B0E2F0] text-[#1F3E47]"; 
 
         const tr = document.createElement("tr");
         tr.className = colorClass;
@@ -188,13 +180,12 @@ function renderDashboard() {
             <td class="p-4 text-center font-black">${item.qty || 0}</td>
             <td class="p-4 text-xs">${item.unit || ''}</td>
             <td class="p-4 text-xs">${item.storage || '-'}</td>
-            <td class="p-4 text-xs italic text-slate-400">${item.note || '-'}</td>
+            <td class="p-4 text-xs italic opacity-75">${item.note || '-'}</td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-// 5. ระบบหน้าตรวจสอบยา (Filter)
 function filterByType(type) {
     APP_STATE.activeType = type;
     document.querySelectorAll("#type-pills button").forEach(b => {
@@ -214,6 +205,7 @@ function searchMedicines() {
     }
 }
 
+// ปรับสี Badge หน้าเช็คยาตาม Pantone
 function renderInspectList() {
     const container = document.getElementById("inspect-list-container");
     if (!container) return;
@@ -235,13 +227,15 @@ function renderInspectList() {
         if (totalLotsCount === 0) {
             statusBadge = `<span class="text-xs px-2.5 py-1 bg-slate-100 text-slate-400 rounded-lg font-medium">ไม่มีข้อมูล Lot</span>`;
         } else if (inspectedLotsCount === totalLotsCount) {
-            statusBadge = `<span class="text-xs px-2.5 py-1 bg-teal-100 text-teal-700 rounded-lg font-bold">✅ ตรวจครบแล้ว</span>`;
+            // ตรวจครบแล้ว: สีเขียวพาสเทล #E2F2D5
+            statusBadge = `<span class="text-xs px-2.5 py-1 bg-[#E2F2D5] text-[#4A6B32] rounded-lg font-bold">✅ ตรวจครบแล้ว</span>`;
         } else {
-            statusBadge = `<span class="text-xs px-2.5 py-1 bg-amber-100 text-amber-700 rounded-lg font-bold">⚠️ ตรวจแล้ว ${inspectedLotsCount}/${totalLotsCount} lot</span>`;
+            // ยังตรวจไม่ครบ: สีเหลืองพาสเทล #F9FBBA
+            statusBadge = `<span class="text-xs px-2.5 py-1 bg-[#F9FBBA] text-[#61631F] rounded-lg font-bold">⚠️ ค้างตรวจ ${totalLotsCount - inspectedLotsCount} lot</span>`;
         }
 
         const div = document.createElement("div");
-        div.className = "p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-teal-300 hover:shadow-md transition-all flex justify-between items-start cursor-pointer";
+        div.className = "p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-[#D4EDF4] hover:shadow-md transition-all flex justify-between items-start cursor-pointer";
         div.onclick = () => openModal(drug.barcodeId);
         div.innerHTML = `
             <div class="space-y-1">
@@ -255,7 +249,6 @@ function renderInspectList() {
     });
 }
 
-// 6. ระบบเปิดใช้งานกล้องมือถือสแกนบาร์โค้ด
 function toggleScanner() {
     const readerDiv = document.getElementById("qr-reader");
     if (!readerDiv) return;
@@ -275,7 +268,6 @@ function toggleScanner() {
     }
 }
 
-// 7. กล่องบันทึกข้อมูลย่อย (Modal Management)
 function openModal(barcodeId) {
     APP_STATE.selectedBarcode = barcodeId;
     const drug = APP_STATE.master.find(m => m.barcodeId.toString() === barcodeId.toString());
@@ -312,23 +304,22 @@ function renderModalLots() {
 
     drugLots.forEach(lot => {
         const div = document.createElement("div");
-        div.className = `p-3 rounded-xl border text-xs flex justify-between items-center ${lot.isInspected ? 'bg-teal-50/40 border-teal-200':'bg-slate-50/50 border-slate-200'}`;
+        div.className = `p-3 rounded-xl border text-xs flex justify-between items-center ${lot.isInspected ? 'bg-[#E2F2D5]/50 border-[#E2F2D5]':'bg-slate-50/50 border-slate-200'}`;
         div.innerHTML = `
             <div>
-                <p class="font-bold text-slate-700">Lot: ${lot.lotNumber || 'ไม่ระบุ'} | <span class="text-rose-400 font-bold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
+                <p class="font-bold text-slate-700">Lot: ${lot.lotNumber || 'ไม่ระบุ'} | <span class="text-[#A84E4E] font-bold">EXP: ${lot.expDate ? new Date(lot.expDate).toLocaleDateString('th-TH') : '-'}</span></p>
                 <p class="text-slate-400 mt-0.5 font-medium">จำนวน: ${lot.qty || 0} | ที่เก็บ: ${lot.storage || '-'} | หมายเหตุ: ${lot.note || '-'}</p>
-                ${lot.isInspected ? `<p class="text-[10px] text-teal-500 font-bold mt-0.5">✓ ตรวจแล้วโดย ${lot.inspector || 'เจ้าหน้าที่'}</p>` : ''}
+                ${lot.isInspected ? `<p class="text-[10px] text-[#4A6B32] font-bold mt-0.5">✓ ตรวจแล้วโดย ${lot.inspector || 'เจ้าหน้าที่'}</p>` : ''}
             </div>
             <div class="flex gap-1 shrink-0">
-                <button onclick="inspectSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-teal-500 border border-teal-200 hover:bg-teal-50 rounded-lg font-bold transition-colors cursor-pointer">ตรวจล็อตนี้</button>
-                <button onclick="deleteSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-rose-400 border border-rose-100 hover:bg-rose-50 rounded-lg font-bold transition-colors cursor-pointer">ลบ</button>
+                <button onclick="inspectSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-[#2C5282] border border-[#D4EDF4] hover:bg-[#D4EDF4]/30 rounded-lg font-bold transition-colors cursor-pointer">ตรวจล็อตนี้</button>
+                <button onclick="deleteSpecificLot('${lot.lotNumber}')" class="px-2 py-1 bg-white text-[#7A2E2E] border border-[#F6C2C2] hover:bg-[#F6C2C2]/40 rounded-lg font-bold transition-colors cursor-pointer">ลบ</button>
             </div>
         `;
         container.appendChild(div);
     });
 }
 
-// 8. การทำงานระดับย่อย: เพิ่ม ตรวจสอบ ลบรายล็อต
 async function submitLotForm() {
     const num = document.getElementById("lot-number").value.trim();
     const exp = document.getElementById("lot-exp").value;
@@ -360,7 +351,7 @@ async function submitLotForm() {
             document.getElementById("lot-exp").value = "";
             document.getElementById("lot-qty").value = "";
         }
-    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถส่งข้อมูลไปบันทึกได้", "error"); }
+    } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถส่งข้อมูลได้", "error"); }
 }
 
 async function inspectSpecificLot(lotNumber) {
@@ -380,17 +371,17 @@ async function inspectSpecificLot(lotNumber) {
         });
         await reloadDataFromServer();
         renderModalLots();
-        Swal.fire("ตรวจแล้ว", `ยืนยันความถูกต้องเฉพาะ Lot: ${lotNumber} เรียบร้อย`, "success");
-    } catch(e) { Swal.fire("ล้มเหลว", "เกิดข้อผิดพลาดในการตรวจสอบระบบ", "error"); }
+        Swal.fire("ตรวจแล้ว", `ยืนยันความถูกต้องเรียบร้อย`, "success");
+    } catch(e) { Swal.fire("ล้มเหลว", "เกิดข้อผิดพลาดในการตรวจสอบ", "error"); }
 }
 
 function deleteSpecificLot(lotNumber) {
     Swal.fire({
         title: 'ยืนยันการลบตัวเลือก?',
-        text: `คุณต้องการลบล็อดยาหมายเลข ${lotNumber} ออกจากฐานข้อมูลหรือไม่`,
+        text: `คุณต้องการลบล็อดยาหมายเลข ${lotNumber} หรือไม่`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#fda4af', // สีชมพูพาสเทลสำหรับปุ่มยืนยันอันตราย
+        confirmButtonColor: '#F6C2C2', // สีชมพูแดงพาสเทล
         confirmButtonText: 'ลบข้อมูล',
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
@@ -404,7 +395,7 @@ function deleteSpecificLot(lotNumber) {
                 });
                 await reloadDataFromServer();
                 renderModalLots();
-                Swal.fire("ลบสำเร็จ", "ลบข้อมูลล็อดยาที่เลือกเรียบร้อยแล้ว", "success");
+                Swal.fire("ลบสำเร็จ", "ลบข้อมูลล็อดยาเรียบร้อยแล้ว", "success");
             } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถสั่งลบข้อมูลได้", "error"); }
         }
     });
@@ -425,7 +416,6 @@ async function submitFinalVerify() {
     } catch(e) { Swal.fire("ล้มเหลว", "ไม่สามารถส่งคำยืนยันการตรวจได้", "error"); }
 }
 
-// 9. สิทธิ์ ADMIN
 function renderAdminList() {
     const container = document.getElementById("admin-drug-list");
     if (!container) return;
@@ -445,7 +435,7 @@ function renderAdminList() {
                 <p class="font-bold text-slate-700">${drug.drugName}</p>
                 <p class="text-slate-400">Barcode: ${drug.barcodeId} | กลุ่ม: ${drug.type || 'ทั่วไป'}</p>
             </div>
-            <button onclick="deleteDrugMaster('${drug.barcodeId}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-400 rounded-lg transition-colors font-bold cursor-pointer">ลบรายการหลัก</button>
+            <button onclick="deleteDrugMaster('${drug.barcodeId}')" class="px-2 py-1 bg-[#F6C2C2]/40 hover:bg-[#F6C2C2] text-[#7A2E2E] rounded-lg transition-colors font-bold cursor-pointer">ลบรายการหลัก</button>
         `;
         container.appendChild(div);
     });
@@ -475,7 +465,7 @@ async function submitNewDrug() {
         if(result.success) {
             await reloadDataFromServer();
             renderAdminList();
-            Swal.fire("บันทึกแล้ว", "เพิ่มยาตัวใหม่เข้าสู่ระบบคลังสำเร็จ", "success");
+            Swal.fire("บันทึกแล้ว", "เพิ่มยาตัวใหม่สำเร็จ", "success");
             document.getElementById("add-barcode").value = "";
             document.getElementById("add-name").value = "";
         } else {
@@ -490,7 +480,7 @@ function deleteDrugMaster(barcodeId) {
         text: "การลบจะลบข้อมูลทั้งรายการหลักและล็อดย่อยทั้งหมดที่ผูกกับรหัสนี้!",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#fda4af',
+        confirmButtonColor: '#F6C2C2',
         confirmButtonText: 'ยืนยันลบทั้งหมด',
         cancelButtonText: 'ยกเลิก'
     }).then(async (result) => {
@@ -510,12 +500,11 @@ function deleteDrugMaster(barcodeId) {
     });
 }
 
-// 10. ระบบพิมพ์และสร้างรายงาน
 function generateReport(reportType) {
     const startStr = document.getElementById("report-start").value;
     const endStr = document.getElementById("report-end").value;
     
-    if(!startStr || !endStr) return Swal.fire("ระบุเวลา", "โปรดเลือกช่วงวันที่เริ่มต้นและสิ้นสุดก่อนดึงรายงาน", "warning");
+    if(!startStr || !endStr) return Swal.fire("ระบุเวลา", "โปรดเลือกช่วงวันที่ก่อนดึงรายงาน", "warning");
 
     const start = new Date(startStr);
     const end = new Date(endStr);
@@ -532,7 +521,7 @@ function generateReport(reportType) {
             <p class="text-xs text-slate-400 mt-0.5">ช่วงเวลาประเมินผล: ${start.toLocaleDateString('th-TH')} ถึง ${end.toLocaleDateString('th-TH')}</p>
             <p class="text-[11px] text-slate-400">ผู้พิมพ์รายงาน: ${APP_STATE.user || '-'} | วันและเวลาพิมพ์: ${new Date().toLocaleString('th-TH')}</p>
         </div>
-        <button onclick="printReport('report-preview-container')" class="no-print mb-4 px-4 py-2 bg-teal-400 text-white rounded-xl text-xs font-bold cursor-pointer">🖨️ สั่งพิมพ์เอกสารนี้</button>
+        <button onclick="printReport('report-preview-container')" class="no-print mb-4 px-4 py-2 bg-[#D4EDF4] text-[#2C5282] border border-[#D4EDF4] rounded-xl text-xs font-bold cursor-pointer">🖨️ สั่งพิมพ์เอกสารนี้</button>
     `;
 
     let tableHTML = "";
@@ -584,7 +573,7 @@ function generateReport(reportType) {
                     <tr class="text-slate-600">
                         <td class="p-2 border border-slate-100 font-bold">${med ? med.drugName : 'ไม่ทราบชื่อ'}</td><td class="p-2 border border-slate-100">${med ? med.type : '-'}</td>
                         <td class="p-2 border border-slate-100 font-mono">${lot.lotNumber || ''}</td>
-                        <td class="p-2 border border-slate-100 text-center text-teal-500 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
+                        <td class="p-2 border border-slate-100 text-center text-teal-600 font-bold">${lot.isInspected ? '✓ ตรวจสอบแล้ว':'✕ ค้างตรวจ'}</td>
                         <td class="p-2 border border-slate-100">${lot.inspector || '-'}</td>
                         <td class="p-2 border border-slate-100">${insTime.toLocaleDateString('th-TH')}</td>
                     </tr>
@@ -606,11 +595,11 @@ function printReport(containerId) {
 function handleLogout() {
     Swal.fire({
         title: 'ออกจากระบบคลังยา?',
-        text: "คุณต้องการยกเลิกเซสชันและล็อกเอาท์ออกจากระบบ CATH LAB หรือไม่",
+        text: "คุณต้องการล็อกเอาท์ออกจากระบบหรือไม่",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#2dd4bf', // พาสเทลมิ้นต์
-        cancelButtonColor: '#fda4af', // พาสเทลชมพู
+        confirmButtonColor: '#D4EDF4', // สีฟ้าพาสเทลยืนยัน
+        cancelButtonColor: '#F6C2C2',  // สีแดงพาสเทลยกเลิก
         confirmButtonText: 'ยืนยันล็อกเอาท์',
         cancelButtonText: 'ยกเลิก'
     }).then((result) => {
